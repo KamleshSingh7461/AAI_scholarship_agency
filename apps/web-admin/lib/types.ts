@@ -1,0 +1,191 @@
+export interface Award {
+  id: string;
+  awardNo: string;
+  applicationId: string;
+  athleteUserId: string;
+  athleteCode: string;
+  athleteName: string;
+  whatsappNumber: string;
+  athleteEmail: string | null;
+  sport: string | null;
+  isMinor: boolean;
+  universityId: string;
+  universityName: string;
+  programId: string;
+  programName: string;
+  academicYear: string;
+  durationYears: number;
+  currency: string;
+  tuitionPerYear: number;
+  roomPerYear: number;
+  foodPerYear: number;
+  otherPerYear: number;
+  annualValue: number;
+  totalValue: number;
+  usdInrRate4: number;
+  commissionBps: number;
+  status: string;
+  currentYear: number;
+  offeredAt: string;
+  agreementsDeadline: string;
+  grantDate: string | null;
+  startDate: string | null;
+  endDate: string | null;
+  scholarshipSignedAt: string | null;
+  scholarshipSignedDocumentId: string | null;
+  agencySignedAt: string | null;
+  agencySignedDocumentId: string | null;
+  universityConfirmationStatus: string;
+  universityConfirmedAt: string | null;
+  universityConfirmationDocumentId: string | null;
+  universityConfirmationNote: string | null;
+  suspensionReason: string | null;
+  revokeReason: string | null;
+  years?: AwardYear[];
+}
+
+export interface AwardYear {
+  id: string;
+  awardId: string;
+  yearNumber: number;
+  academicYear: string;
+  periodStart: string;
+  periodEnd: string;
+  dueDate: string;
+  status: string;
+  amount: number;
+  registrationSubmittedAt: string | null;
+  scholarshipSignedAt: string | null;
+  agencySignedAt: string | null;
+  renewedAt: string | null;
+  currentCourse: string | null;
+  academicScore: string | null;
+  registrationDocumentId: string | null;
+  daysUntilDue?: number;
+  award?: Pick<Award, 'id' | 'awardNo' | 'athleteName' | 'athleteCode' | 'whatsappNumber' | 'universityName' | 'sport' | 'status' | 'athleteUserId'>;
+}
+
+export interface Application {
+  id: string;
+  applicationNo: string;
+  athleteUserId: string;
+  athleteProfileId: string;
+  athleteCode: string;
+  athleteName: string;
+  athletePhone: string;
+  whatsappNumber: string;
+  athleteEmail: string | null;
+  sport: string | null;
+  isMinor: boolean;
+  programId: string;
+  programName: string;
+  universityId: string;
+  universityName: string;
+  academicYear: string;
+  durationYears: number;
+  currency: string;
+  annualValue: number;
+  totalValue: number;
+  usdInrRate4: number;
+  statement: string | null;
+  preferredCourse: string | null;
+  status: string;
+  feeTotalInr: number;
+  paymentStatus: string;
+  paymentOrderId: string | null;
+  submittedAt: string | null;
+  rejectionReason: string | null;
+  universityDecisionNote: string | null;
+  createdAt: string;
+  updatedAt: string;
+  history?: { id: string; fromStatus: string | null; toStatus: string; note: string | null; actorRole: string | null; createdAt: string }[];
+  notes?: { id: string; authorName: string | null; body: string; createdAt: string }[];
+  award?: Award | null;
+}
+
+export interface Paged<T> {
+  items: T[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+  statusCounts?: Record<string, number>;
+}
+
+export interface University {
+  id: string;
+  name: string;
+  shortName: string | null;
+  slug: string;
+  city: string | null;
+  state: string | null;
+  country: string;
+  website: string | null;
+  description: string | null;
+  contactName: string | null;
+  contactEmail: string | null;
+  contactPhone: string | null;
+  status: string;
+  _count?: { programs: number; agreements: number };
+}
+
+export interface Program {
+  id: string;
+  code: string;
+  slug: string;
+  name: string;
+  description: string | null;
+  universityId: string;
+  allocationId: string | null;
+  university?: University;
+  scholarshipType: string;
+  coverageType: string;
+  durationYears: number;
+  academicYear: string;
+  intakeDate: string | null;
+  applicationOpensAt: string | null;
+  applicationClosesAt: string | null;
+  eligibleSports: string[];
+  eligibilityCriteria: string | null;
+  minAge: number | null;
+  maxAge: number | null;
+  genderEligibility: string;
+  courses: string[];
+  currency: string;
+  tuitionFullPerYear: number;
+  tuitionCoverageBps: number;
+  tuitionPerYear: number;
+  roomPerYear: number;
+  foodPerYear: number;
+  otherPerYear: number;
+  otherCostsNote: string | null;
+  tuitionBorneBy: string;
+  roomBorneBy: string;
+  foodBorneBy: string;
+  otherBorneBy: string;
+  feeType: string;
+  feeFlatInr: number;
+  feePercentBps: number;
+  feePercentBase: string;
+  feeMinInr: number;
+  feeMaxInr: number;
+  taxBps: number;
+  feeRefundableOnRejection: boolean;
+  commissionBps: number;
+  universityCommissionShareBps: number;
+  seatsTotal: number;
+  seatsReserved: number;
+  seatsAwarded: number;
+  seatsLeft: number;
+  status: string;
+  isOpen: boolean;
+  value: {
+    currency: string;
+    annualValue: number;
+    totalValue: number;
+    usdInrRate4: number;
+    inr: { annualValue: number; totalValue: number };
+    usd: { annualValue: number; totalValue: number };
+  };
+  fee: { baseInr: number; taxInr: number; totalInr: number; explanation: string };
+}

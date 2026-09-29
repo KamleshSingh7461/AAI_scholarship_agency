@@ -1,0 +1,220 @@
+// athlete-service: the athlete profile captured by the 4-step sign-up wizard
+
+generator client {
+  provider      = "prisma-client-js"
+  output        = "../src/generated/prisma"
+  binaryTargets = ["native", "debian-openssl-3.0.x", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("ATHLETE_DATABASE_URL")
+}
+
+model AthleteProfile {
+  id                     String    @id @default(uuid()) @db.Uuid
+  userId                 String    @unique @db.Uuid
+  athleteNumber          Int       @unique @default(autoincrement())
+  /// Public student id shown everywhere, e.g. AC-01042
+  athleteCode            String?   @unique
+  /// DRAFT | SUBMITTED | VERIFIED | CHANGES_REQUESTED | REJECTED
+  status                 String    @default("DRAFT")
+
+  // ---- Step 1: Basic details
+  firstName              String?
+  lastName               String?
+  dateOfBirth            DateTime? @db.Date
+  gender                 String?
+  nationality            String?
+  profilePhotoDocumentId String?   @db.Uuid
+
+  // ---- Step 1: Contact information (phone comes from the verified login)
+  email                  String?
+  phone                  String
+  whatsappNumber         String?
+  addressLine            String?
+  city                   String?
+  state                  String?
+  zipCode                String?
+  country                String    @default("India")
+
+  // ---- Guardian (mandatory for athletes under 18: minors cannot sign contracts alone)
+  guardianName           String?
+  guardianRelation       String?
+  guardianPhone          String?
+  guardianEmail          String?
+
+  stepsCompleted         Int[]     @default([])
+  submittedAt            DateTime?
+  reviewedAt             DateTime?
+  reviewedById           String?   @db.Uuid
+  reviewRemarks          String?
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+
+  academics              AcademicRecord[]
+  sports                 SportsProfile?
+  documents              AthleteDocument[]
+  references             AthleteReference[]
+
+  @@index([status])
+  @@map("athlete_profiles")
+}
+
+/// Step 2: High school (10th), Intermediate (12th / Diploma), Graduation
+model AcademicRecord {
+  id                    String         @id @default(uuid()) @db.Uuid
+  profileId             String         @db.Uuid
+  profile               AthleteProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  /// HIGH_SCHOOL | INTERMEDIATE | GRADUATION
+  level                 String
+  institutionName       String
+  /// Board (CBSE / State / ICSE) or University
+  boardOrUniversity     String?
+  /// Science / Commerce / Arts / Vocational (12th)
+  stream                String?
+  /// B.A / B.Sc / B.Com ... (graduation)
+  degree                String?
+  major                 String?
+  yearOfPassing         Int?
+  isExpectedYear        Boolean        @default(false)
+  /// PERCENTAGE | GRADE | CGPA
+  scoreType             String?
+  scoreValue            String?
+  certificateDocumentId String?        @db.Uuid
+
+  @@unique([profileId, level])
+  @@map("academic_records")
+}
+
+/// Step 3: Sports Metrix
+model SportsProfile {
+  id                         String         @id @default(uuid()) @db.Uuid
+  profileId                  String         @unique @db.Uuid
+  profile                    AthleteProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  // Primary sport profile
+  primarySport               String
+  currentClub                String?
+  coachName                  String?
+  coachContact               String?
+  yearsOfTraining            Int?
+
+  // Physical metrics
+  heightCm                   Decimal?       @db.Decimal(5, 1)
+  weightKg                   Decimal?       @db.Decimal(5, 1)
+  wingspanCm                 Decimal?       @db.Decimal(5, 1)
+  chestCm                    Decimal?       @db.Decimal(5, 1)
+  waistCm                    Decimal?       @db.Decimal(5, 1)
+  bodyFatPct                 Decimal?       @db.Decimal(4, 1)
+  /// BEGINNER | INTERMEDIATE | ELITE
+  fitnessLevel               String?
+
+  // Competition & ranking
+  /// NATIONAL | STATE | DISTRICT | NONE
+  rankingLevel               String?
+  rankingValue               String?
+  /// U14 | U17 | U19 | SENIOR
+  ageGroup                   String?
+  bestPerformance            String?
+  medalsGold                 Int            @default(0)
+  medalsSilver               Int            @default(0)
+  medalsBronze               Int            @default(0)
+  internationalParticipation Boolean        @default(false)
+  internationalDetails       String?
+
+  // Injury / medical status
+  previousInjuries           Boolean        @default(false)
+  injuryDetails              String?
+  recoveryStatus             String?
+  medicalClearanceDocumentId String?        @db.Uuid
+
+  // Verification
+  sportsIdDocumentId         String?        @db.Uuid
+  coachCertificationDocumentId String?      @db.Uuid
+
+  @@index([primarySport])
+  @@map("sports_profiles")
+}
+
+/// Step 4: uploaded documents, one row per type
+model AthleteDocument {
+  id                 String         @id @default(uuid()) @db.Uuid
+  profileId          String         @db.Uuid
+  profile            AthleteProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  /// AthleteDocumentType (GOVT_ID, DOB_PROOF, MARKSHEET_10, ...)
+  type               String
+  documentId         String         @db.Uuid
+  /// PENDING | VERIFIED | REJECTED
+  verificationStatus String         @default("PENDING")
+  verifiedById       String?        @db.Uuid
+  verifiedAt         DateTime?
+  remarks            String?
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+
+  @@unique([profileId, type])
+  @@map("athlete_documents")
+}
+
+/// Step 4: references (Reference 1 mandatory, Reference 2 recommended)
+model AthleteReference {
+  id                  String         @id @default(uuid()) @db.Uuid
+  profileId           String         @db.Uuid
+  profile             AthleteProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  position            Int
+  name                String
+  /// COACH | TRAINER | TEACHER | SPORTS_OFFICIAL | OTHER
+  designation         String
+  organization        String
+  relationship        String?
+  phone               String
+  email               String?
+  certificationDocumentId String?    @db.Uuid
+
+  @@unique([profileId, position])
+  @@map("athlete_references")
+}
+
+// ---------------------------------------------------------------------------
+// Common tables required by @aci/nest-common (outbox, inbox, audit).
+// ---------------------------------------------------------------------------
+
+model OutboxEvent {
+  id          String    @id @db.Uuid
+  type        String
+  payload     Json
+  createdAt   DateTime  @default(now()) @map("created_at")
+  publishedAt DateTime? @map("published_at")
+  attempts    Int       @default(0)
+  lastError   String?   @map("last_error")
+
+  @@index([publishedAt, createdAt])
+  @@map("outbox_events")
+}
+
+model ProcessedEvent {
+  eventId     String   @map("event_id") @db.Uuid
+  handler     String
+  processedAt DateTime @default(now()) @map("processed_at")
+
+  @@id([eventId, handler])
+  @@map("processed_events")
+}
+
+model AuditLog {
+  id         String   @id @default(uuid()) @db.Uuid
+  actorId    String?  @map("actor_id")
+  actorRole  String?  @map("actor_role")
+  action     String
+  entityType String   @map("entity_type")
+  entityId   String   @map("entity_id")
+  before     Json?
+  after      Json?
+  ip         String?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([entityType, entityId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}

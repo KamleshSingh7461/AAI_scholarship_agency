@@ -1,0 +1,158 @@
+# Full LOCAL stack in containers: infrastructure + migrations + 9 services + gateway + 3 web apps.
+#   docker compose -f infra/docker/docker-compose.yml --env-file .env up --build
+# For day-to-day development prefer `npm run infra:up` + `npm run dev` (hot reload on the host).
+name: aci
+
+include:
+  - docker-compose.infra.yml
+
+x-service: &service
+  restart: unless-stopped
+  env_file: ../../.env
+  depends_on:
+    migrator:
+      condition: service_completed_successfully
+    redis:
+      condition: service_healthy
+    rabbitmq:
+      condition: service_healthy
+
+x-internal-env: &internal-env
+  NODE_ENV: production
+  RABBITMQ_URL: amqp://${RABBITMQ_USER:-aci}:${RABBITMQ_PASSWORD:-aci_local_pw}@rabbitmq:5672
+  REDIS_URL: redis://redis:6379
+  JWT_PUBLIC_KEY_FILE: /run/keys/jwt-public.pem
+  AUTH_SERVICE_URL: http://auth-service:4001
+  ATHLETE_SERVICE_URL: http://athlete-service:4002
+  UNIVERSITY_SERVICE_URL: http://university-service:4003
+  APPLICATION_SERVICE_URL: http://application-service:4004
+  PAYMENT_SERVICE_URL: http://payment-service:4005
+  ESIGN_SERVICE_URL: http://esign-service:4006
+  DOCUMENT_SERVICE_URL: http://document-service:4007
+  NOTIFICATION_SERVICE_URL: http://notification-service:4008
+  FINANCE_SERVICE_URL: http://finance-service:4009
+  SMTP_HOST: mailpit
+
+
+services:
+  migrator:
+    build: { context: ../.., dockerfile: infra/docker/migrator.Dockerfile }
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      AUTH_DATABASE_URL: postgresql://aci_auth:${SERVICE_DB_PASSWORD:-aci_local_pw}@postgres:5432/aci_auth?schema=public
+      ATHLETE_DATABASE_URL: postgresql://aci_athlete:${SERVICE_DB_PASSWORD:-aci_local_pw}@postgres:5432/aci_athlete?schema=public
+      UNIVERSITY_DATABASE_URL: postgresql://aci_university:${SERVICE_DB_PASSWORD:-aci_local_pw}@postgres:5432/aci_university?schema=public
+      APPLICATION_DATABASE_URL: postgresql://aci_application:${SERVICE_DB_PASSWORD:-aci_local_pw}@postgres:5432/aci_application?schema=public
+      PAYMENT_DATABASE_URL: postgresql://aci_payment:${SERVICE_DB_PASSWORD:-aci_local_pw}@postgres:5432/aci_payment?schema=public
+      ESIGN_DATABASE_URL: postgresql://aci_esign:${SERVICE_DB_PASSWORD:-aci_local_pw}@postgres:5432/aci_esign?schema=public
+      DOCUMENT_DATABASE_URL: postgresql://aci_document:${SERVICE_DB_PASSWORD:-aci_local_pw}@postgres:5432/aci_document?schema=public
+      NOTIFICATION_DATABASE_URL: postgresql://aci_notification:${SERVICE_DB_PASSWORD:-aci_local_pw}@postgres:5432/aci_notification?schema=public
+      FINANCE_DATABASE_URL: postgresql://aci_finance:${SERVICE_DB_PASSWORD:-aci_local_pw}@postgres:5432/aci_finance?schema=public
+    restart: "no"
+
+  auth-service:
+    <<: *service
+    build: { context: ../.., dockerfile: services/auth-service/Dockerfile }
+    environment:
+      <<: *internal-env
+      AUTH_DATABASE_URL: postgresql://aci_auth:${SERVICE_DB_PASSWORD:-aci_local_pw}@postgres:5432/aci_auth?schema=public
+      AUTH_JWT_PRIVATE_KEY_FILE: /run/keys/jwt-private.pem
+    volumes: ["../../env/keys:/run/keys:ro"]
+
+  athlete-service:
+    <<: *service
+    build: { context: ../.., dockerfile: services/athlete-service/Dockerfile }
+    environment:
+      <<: *internal-env
+      ATHLETE_DATABASE_URL: postgresql://aci_athlete:${SERVICE_DB_PASSWORD:-aci_local_pw}@postgres:5432/aci_athlete?schema=public
+    volumes: ["../../env/keys/jwt-public.pem:/run/keys/jwt-public.pem:ro"]
+
+  university-service:
+    <<: *service
+    build: { context: ../.., dockerfile: services/university-service/Dockerfile }
+    environment:
+      <<: *internal-env
+      UNIVERSITY_DATABASE_URL: postgresql://aci_university:${SERVICE_DB_PASSWORD:-aci_local_pw}@postgres:5432/aci_university?schema=public
+    volumes: ["../../env/keys/jwt-public.pem:/run/keys/jwt-public.pem:ro"]
+
+  application-service:
+    <<: *service
+    build: { context: ../.., dockerfile: services/application-service/Dockerfile }
+    environment:
+      <<: *internal-env
+      APPLICATION_DATABASE_URL: postgresql://aci_application:${SERVICE_DB_PASSWORD:-aci_local_pw}@postgres:5432/aci_application?schema=public
+    volumes: ["../../env/keys/jwt-public.pem:/run/keys/jwt-public.pem:ro"]
+
+  payment-service:
+    <<: *service
+    build: { context: ../.., dockerfile: services/payment-service/Dockerfile }
+    environment:
+      <<: *internal-env
+      PAYMENT_DATABASE_URL: postgresql://aci_payment:${SERVICE_DB_PASSWORD:-aci_local_pw}@postgres:5432/aci_payment?schema=public
+    volumes: ["../../env/keys/jwt-public.pem:/run/keys/jwt-public.pem:ro"]
+
+  esign-service:
+    <<: *service
+    build: { context: ../.., dockerfile: services/esign-service/Dockerfile }
+    environment:
+      <<: *internal-env
+      ESIGN_DATABASE_URL: postgresql://aci_esign:${SERVICE_DB_PASSWORD:-aci_local_pw}@postgres:5432/aci_esign?schema=public
+    volumes: ["../../env/keys/jwt-public.pem:/run/keys/jwt-public.pem:ro"]
+
+  document-service:
+    <<: *service
+    build: { context: ../.., dockerfile: services/document-service/Dockerfile }
+    environment:
+      <<: *internal-env
+      DOCUMENT_DATABASE_URL: postgresql://aci_document:${SERVICE_DB_PASSWORD:-aci_local_pw}@postgres:5432/aci_document?schema=public
+      S3_ENDPOINT: http://seaweedfs:8333
+      S3_PUBLIC_ENDPOINT: http://localhost:${S3_HOST_PORT:-9000}
+    volumes: ["../../env/keys/jwt-public.pem:/run/keys/jwt-public.pem:ro"]
+
+  notification-service:
+    <<: *service
+    build: { context: ../.., dockerfile: services/notification-service/Dockerfile }
+    environment:
+      <<: *internal-env
+      NOTIFICATION_DATABASE_URL: postgresql://aci_notification:${SERVICE_DB_PASSWORD:-aci_local_pw}@postgres:5432/aci_notification?schema=public
+    volumes: ["../../env/keys/jwt-public.pem:/run/keys/jwt-public.pem:ro"]
+
+  finance-service:
+    <<: *service
+    build: { context: ../.., dockerfile: services/finance-service/Dockerfile }
+    environment:
+      <<: *internal-env
+      FINANCE_DATABASE_URL: postgresql://aci_finance:${SERVICE_DB_PASSWORD:-aci_local_pw}@postgres:5432/aci_finance?schema=public
+    volumes: ["../../env/keys/jwt-public.pem:/run/keys/jwt-public.pem:ro"]
+
+  api-gateway:
+    build: { context: ../.., dockerfile: services/api-gateway/Dockerfile }
+    restart: unless-stopped
+    env_file: ../../.env
+    environment:
+      <<: *internal-env
+    ports: ["${GATEWAY_PORT:-8080}:8080"]
+    depends_on: [auth-service, athlete-service, university-service, application-service, payment-service, esign-service, document-service, notification-service, finance-service]
+
+  web-public:
+    build: { context: ../.., dockerfile: apps/web-public/Dockerfile }
+    restart: unless-stopped
+    environment: { API_GATEWAY_URL: "http://api-gateway:8080" }
+    ports: ["3000:3000"]
+    depends_on: [api-gateway]
+
+  web-student:
+    build: { context: ../.., dockerfile: apps/web-student/Dockerfile }
+    restart: unless-stopped
+    environment: { API_GATEWAY_URL: "http://api-gateway:8080" }
+    ports: ["3001:3001"]
+    depends_on: [api-gateway]
+
+  web-admin:
+    build: { context: ../.., dockerfile: apps/web-admin/Dockerfile }
+    restart: unless-stopped
+    environment: { API_GATEWAY_URL: "http://api-gateway:8080" }
+    ports: ["3002:3002"]
+    depends_on: [api-gateway]

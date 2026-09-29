@@ -1,0 +1,129 @@
+// payment-service: gateway orders (Razorpay / Cashfree / PayU), webhooks, refunds
+
+generator client {
+  provider      = "prisma-client-js"
+  output        = "../src/generated/prisma"
+  binaryTargets = ["native", "debian-openssl-3.0.x", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("PAYMENT_DATABASE_URL")
+}
+
+model PaymentOrder {
+  id                String    @id @default(uuid()) @db.Uuid
+  /// Our receipt number, also sent to the gateway as its order reference
+  orderNo           String    @unique
+  /// APPLICATION_FEE | RENEWAL_FEE
+  purpose           String
+  referenceType     String
+  referenceId       String    @db.Uuid
+  userId            String    @db.Uuid
+  /// Total charged incl. tax, minor units
+  amount            BigInt
+  taxAmount         BigInt    @default(0)
+  currency          String    @default("INR")
+  description       String
+  customer          Json
+  /// RAZORPAY | CASHFREE | PAYU | MOCK
+  provider          String
+  providerOrderId   String?
+  providerPaymentId String?
+  /// CREATED | PENDING | PAID | FAILED | EXPIRED | REFUNDED | PARTIALLY_REFUNDED
+  status            String    @default("CREATED")
+  checkout          Json?
+  expiresAt         DateTime
+  paidAt            DateTime?
+  failureReason     String?
+  refundedAmount    BigInt    @default(0)
+  lastCheckedAt     DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  refunds           Refund[]
+
+  @@index([referenceType, referenceId])
+  @@index([userId, createdAt])
+  @@index([status, createdAt])
+  @@index([provider, providerOrderId])
+  @@map("payment_orders")
+}
+
+/// Every webhook we receive, verified or not — the raw audit trail for reconciliation.
+model PaymentWebhookEvent {
+  id             String    @id @default(uuid()) @db.Uuid
+  provider       String
+  eventId        String
+  eventType      String?
+  signatureValid Boolean
+  orderId        String?   @db.Uuid
+  payload        Json
+  processedAt    DateTime?
+  error          String?
+  createdAt      DateTime  @default(now())
+
+  @@unique([provider, eventId])
+  @@map("payment_webhook_events")
+}
+
+model Refund {
+  id               String       @id @default(uuid()) @db.Uuid
+  orderId          String       @db.Uuid
+  order            PaymentOrder @relation(fields: [orderId], references: [id])
+  refundNo         String       @unique
+  amount           BigInt
+  reason           String
+  providerRefundId String?
+  /// PENDING | PROCESSED | FAILED
+  status           String       @default("PENDING")
+  requestedById    String?      @db.Uuid
+  error            String?
+  processedAt      DateTime?
+  createdAt        DateTime     @default(now())
+
+  @@index([orderId])
+  @@map("refunds")
+}
+
+// ---------------------------------------------------------------------------
+// Common tables required by @aci/nest-common (outbox, inbox, audit).
+// ---------------------------------------------------------------------------
+
+model OutboxEvent {
+  id          String    @id @db.Uuid
+  type        String
+  payload     Json
+  createdAt   DateTime  @default(now()) @map("created_at")
+  publishedAt DateTime? @map("published_at")
+  attempts    Int       @default(0)
+  lastError   String?   @map("last_error")
+
+  @@index([publishedAt, createdAt])
+  @@map("outbox_events")
+}
+
+model ProcessedEvent {
+  eventId     String   @map("event_id") @db.Uuid
+  handler     String
+  processedAt DateTime @default(now()) @map("processed_at")
+
+  @@id([eventId, handler])
+  @@map("processed_events")
+}
+
+model AuditLog {
+  id         String   @id @default(uuid()) @db.Uuid
+  actorId    String?  @map("actor_id")
+  actorRole  String?  @map("actor_role")
+  action     String
+  entityType String   @map("entity_type")
+  entityId   String   @map("entity_id")
+  before     Json?
+  after      Json?
+  ip         String?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([entityType, entityId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}

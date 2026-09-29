@@ -1,0 +1,127 @@
+// auth-service: identities, OTP challenges, sessions (refresh tokens)
+
+generator client {
+  provider      = "prisma-client-js"
+  output        = "../src/generated/prisma"
+  binaryTargets = ["native", "debian-openssl-3.0.x", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("AUTH_DATABASE_URL")
+}
+
+model User {
+  id                  String    @id @default(uuid()) @db.Uuid
+  /// E.164, e.g. +919876543210. The login identifier.
+  phone               String    @unique
+  email               String?   @unique
+  fullName            String?
+  /// SUPER_ADMIN | ADMIN | FINANCE | REVIEWER | UNIVERSITY_REP | ATHLETE
+  role                String    @default("ATHLETE")
+  /// ACTIVE | DISABLED
+  status              String    @default("ACTIVE")
+  /// Scopes UNIVERSITY_REP users to one university
+  universityId        String?   @db.Uuid
+  preferredOtpChannel String    @default("WHATSAPP")
+  phoneVerifiedAt     DateTime?
+  lastLoginAt         DateTime?
+  createdById         String?   @db.Uuid
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  sessions            Session[]
+
+  @@index([role])
+  @@map("users")
+}
+
+model OtpChallenge {
+  id               String    @id @default(uuid()) @db.Uuid
+  phone            String
+  /// SMS | WHATSAPP (channel actually used, may differ after fallback)
+  channel          String
+  /// STUDENT_LOGIN | STAFF_LOGIN
+  purpose          String
+  /// HMAC-SHA256(pepper, id:code) — the code itself is never stored
+  codeHash         String
+  attempts         Int       @default(0)
+  maxAttempts      Int
+  expiresAt        DateTime
+  consumedAt       DateTime?
+  /// false when the number is not allowed to log in here (response is identical to avoid enumeration)
+  allowed          Boolean   @default(true)
+  deliveryStatus   String    @default("PENDING")
+  deliveryProvider String?
+  ip               String?
+  userAgent        String?
+  createdAt        DateTime  @default(now())
+
+  @@index([phone, createdAt])
+  @@map("otp_challenges")
+}
+
+model Session {
+  id               String    @id @default(uuid()) @db.Uuid
+  userId           String    @db.Uuid
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// SHA-256 of the opaque refresh token
+  refreshTokenHash String    @unique
+  /// Rotation family: reuse of an already-rotated token revokes the whole family
+  family           String    @db.Uuid
+  audience         String
+  userAgent        String?
+  ip               String?
+  expiresAt        DateTime
+  lastUsedAt       DateTime?
+  revokedAt        DateTime?
+  revokedReason    String?
+  replacedById     String?   @db.Uuid
+  createdAt        DateTime  @default(now())
+
+  @@index([userId])
+  @@index([family])
+  @@map("sessions")
+}
+
+// ---------------------------------------------------------------------------
+// Common tables required by @aci/nest-common (outbox, inbox, audit).
+// ---------------------------------------------------------------------------
+
+model OutboxEvent {
+  id          String    @id @db.Uuid
+  type        String
+  payload     Json
+  createdAt   DateTime  @default(now()) @map("created_at")
+  publishedAt DateTime? @map("published_at")
+  attempts    Int       @default(0)
+  lastError   String?   @map("last_error")
+
+  @@index([publishedAt, createdAt])
+  @@map("outbox_events")
+}
+
+model ProcessedEvent {
+  eventId     String   @map("event_id") @db.Uuid
+  handler     String
+  processedAt DateTime @default(now()) @map("processed_at")
+
+  @@id([eventId, handler])
+  @@map("processed_events")
+}
+
+model AuditLog {
+  id         String   @id @default(uuid()) @db.Uuid
+  actorId    String?  @map("actor_id")
+  actorRole  String?  @map("actor_role")
+  action     String
+  entityType String   @map("entity_type")
+  entityId   String   @map("entity_id")
+  before     Json?
+  after      Json?
+  ip         String?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([entityType, entityId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}

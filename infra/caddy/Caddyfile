@@ -1,0 +1,47 @@
+{
+	email {$ACME_EMAIL}
+	servers {
+		trusted_proxies static private_ranges
+	}
+}
+
+(security_headers) {
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "camera=(), microphone=(), geolocation=()"
+		-Server
+	}
+	encode zstd gzip
+}
+
+# Public landing site
+{$PUBLIC_DOMAIN}, www.{$PUBLIC_DOMAIN} {
+	import security_headers
+	reverse_proxy web-public:3000
+}
+
+# Student / athlete portal
+{$STUDENT_DOMAIN} {
+	import security_headers
+	reverse_proxy web-student:3001
+}
+
+# Admin panel — optionally restricted to office / VPN IPs
+{$ADMIN_DOMAIN} {
+	import security_headers
+	@blocked not remote_ip {$ADMIN_ALLOWED_IPS}
+	respond @blocked "Forbidden" 403
+	header X-Frame-Options "DENY"
+	reverse_proxy web-admin:3002
+}
+
+# API (payment/e-sign webhooks, mock checkout, direct API clients)
+{$API_DOMAIN} {
+	import security_headers
+	request_body {
+		max_size 35MB
+	}
+	reverse_proxy api-gateway:8080
+}

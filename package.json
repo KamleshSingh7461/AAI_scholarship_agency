@@ -1,0 +1,42 @@
+{
+  "name": "alumni-connect-india",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Alumni Connect India - scholarship control platform (microservices monorepo)",
+  "workspaces": [
+    "packages/*",
+    "services/*",
+    "apps/*"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "setup": "node scripts/setup-local.mjs",
+    "infra:up": "docker compose -f infra/docker/docker-compose.infra.yml --env-file .env up -d",
+    "infra:down": "docker compose -f infra/docker/docker-compose.infra.yml --env-file .env down",
+    "build:packages": "npm run build -w @aci/contracts -w @aci/nest-common",
+    "build": "npm run build:packages && node scripts/for-each-service.mjs prisma:generate && npm run build -ws --if-present",
+    "prisma:generate": "node scripts/for-each-service.mjs prisma:generate",
+    "db:migrate": "node scripts/for-each-service.mjs db:deploy",
+    "db:deploy": "node scripts/for-each-service.mjs db:deploy",
+    "db:seed": "node scripts/seed.mjs",
+    "dev:services": "node scripts/dev-services.mjs",
+    "dev:apps": "node scripts/dev-apps.mjs",
+    "dev": "node scripts/dev-services.mjs --with-apps",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "e2e": "node scripts/e2e-smoke.mjs",
+    "db:migrate:dev": "node scripts/for-each-service.mjs db:migrate",
+    "seed:demo": "node scripts/seed-demo.mjs",
+    "docker:up": "docker compose -f infra/docker/docker-compose.yml --env-file .env up --build -d",
+    "docker:down": "docker compose -f infra/docker/docker-compose.yml --env-file .env down"
+  },
+  "devDependencies": {
+    "@nestjs/cli": "^11.0.10",
+    "@nestjs/schematics": "^11.0.7",
+    "@types/node": "^22.18.0",
+    "prisma": "6.19.3",
+    "typescript": "5.9.3"
+  }
+}

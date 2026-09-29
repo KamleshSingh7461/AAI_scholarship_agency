@@ -1,0 +1,240 @@
+// university-service: partner universities, MoUs, annual scholarship allocations, programs and seat inventory
+
+generator client {
+  provider      = "prisma-client-js"
+  output        = "../src/generated/prisma"
+  binaryTargets = ["native", "debian-openssl-3.0.x", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("UNIVERSITY_DATABASE_URL")
+}
+
+model University {
+  id           String                  @id @default(uuid()) @db.Uuid
+  name         String
+  shortName    String?
+  slug         String                  @unique
+  city         String?
+  state        String?
+  country      String                  @default("India")
+  website      String?
+  description  String?
+  logoUrl      String?
+  contactName  String?
+  contactEmail String?
+  contactPhone String?
+  /// ACTIVE | INACTIVE
+  status       String                  @default("ACTIVE")
+  createdAt    DateTime                @default(now())
+  updatedAt    DateTime                @updatedAt
+  agreements   PartnershipAgreement[]
+  allocations  ScholarshipAllocation[]
+  programs     ScholarshipProgram[]
+
+  @@map("universities")
+}
+
+/// MoUs and letters: Agreement for Establishment of Alumni Association, Scholarship Transfer Letter, Valuation Letter...
+model PartnershipAgreement {
+  id                           String     @id @default(uuid()) @db.Uuid
+  universityId                 String     @db.Uuid
+  university                   University @relation(fields: [universityId], references: [id])
+  /// ESTABLISHMENT | SCHOLARSHIP_TRANSFER | VALUATION | OTHER
+  type                         String
+  title                        String
+  referenceNo                  String?
+  signedDate                   DateTime?  @db.Date
+  effectiveDate                DateTime   @db.Date
+  termYears                    Int?
+  autoRenew                    Boolean    @default(false)
+  renewalTermYears             Int?
+  noticePeriodMonths           Int?
+  expiresAt                    DateTime?  @db.Date
+  /// Donation / sponsorship revenue split (MoU clause 4.1: 80% university / 20% company)
+  universityRevenueShareBps    Int?
+  companyRevenueShareBps       Int?
+  /// Agency commission on scholarship value and how much of it goes to the university
+  agencyCommissionBps          Int?
+  universityCommissionShareBps Int?
+  documentId                   String?    @db.Uuid
+  notes                        String?
+  /// ACTIVE | EXPIRED | TERMINATED
+  status                       String     @default("ACTIVE")
+  createdAt                    DateTime   @default(now())
+  updatedAt                    DateTime   @updatedAt
+  allocations                  ScholarshipAllocation[]
+
+  @@index([universityId, type])
+  @@map("partnership_agreements")
+}
+
+/// The annual pool of scholarship rights transferred by a university (e.g. 50 seats for 2025-26).
+model ScholarshipAllocation {
+  id                        String                @id @default(uuid()) @db.Uuid
+  universityId              String                @db.Uuid
+  university                University            @relation(fields: [universityId], references: [id])
+  agreementId               String?               @db.Uuid
+  agreement                 PartnershipAgreement? @relation(fields: [agreementId], references: [id])
+  academicYear              String
+  totalSeats                Int
+  /// Seats carried in from the previous year (ROLLOVER policy)
+  rolledOverSeats           Int                   @default(0)
+  /// FORFEIT | ROLLOVER — the two IES letters disagree, so this is set per allocation
+  rolloverPolicy            String                @default("FORFEIT")
+  /// Fair market value per seat per year from the valuation letter (minor units)
+  valuationPerSeatAnnual    BigInt?
+  valuationCurrency         String                @default("INR")
+  transferLetterDocumentId  String?               @db.Uuid
+  valuationLetterDocumentId String?               @db.Uuid
+  /// OPEN | CLOSED
+  status                    String                @default("OPEN")
+  closedAt                  DateTime?
+  forfeitedSeats            Int                   @default(0)
+  rolledToAllocationId      String?               @db.Uuid
+  notes                     String?
+  createdAt                 DateTime              @default(now())
+  updatedAt                 DateTime              @updatedAt
+  programs                  ScholarshipProgram[]
+
+  @@unique([universityId, academicYear])
+  @@map("scholarship_allocations")
+}
+
+model ScholarshipProgram {
+  id                           String                 @id @default(uuid()) @db.Uuid
+  universityId                 String                 @db.Uuid
+  university                   University             @relation(fields: [universityId], references: [id])
+  allocationId                 String?                @db.Uuid
+  allocation                   ScholarshipAllocation? @relation(fields: [allocationId], references: [id])
+  code                         String                 @unique
+  slug                         String                 @unique
+  name                         String
+  description                  String?
+  /// ATHLETIC | ACADEMIC | MERIT | NEED_BASED
+  scholarshipType              String                 @default("ATHLETIC")
+  /// FULL | PARTIAL
+  coverageType                 String                 @default("PARTIAL")
+  durationYears                Int
+  academicYear                 String
+  intakeDate                   DateTime?              @db.Date
+  applicationOpensAt           DateTime?
+  applicationClosesAt          DateTime?
+  eligibleSports               String[]               @default([])
+  eligibilityCriteria          String?
+  minAge                       Int?
+  maxAge                       Int?
+  /// ANY | MALE | FEMALE
+  genderEligibility            String                 @default("ANY")
+  courses                      String[]               @default([])
+
+  // ---- Valuation (minor units, per year) ------------------------------------
+  currency                     String                 @default("INR")
+  /// Full tuition fee per year and the share covered by the scholarship (5000 bps = 50%)
+  tuitionFullPerYear           BigInt                 @default(0)
+  tuitionCoverageBps           Int                    @default(10000)
+  tuitionPerYear               BigInt                 @default(0)
+  roomPerYear                  BigInt                 @default(0)
+  foodPerYear                  BigInt                 @default(0)
+  otherPerYear                 BigInt                 @default(0)
+  otherCostsNote               String?
+  /// Who funds each component: UNIVERSITY | COMPANY | STUDENT (STUDENT = not part of the award value)
+  tuitionBorneBy               String                 @default("UNIVERSITY")
+  roomBorneBy                  String                 @default("COMPANY")
+  foodBorneBy                  String                 @default("COMPANY")
+  otherBorneBy                 String                 @default("STUDENT")
+
+  // ---- Application fee ------------------------------------------------------
+  /// NONE | FLAT | PERCENTAGE
+  feeType                      String                 @default("NONE")
+  feeFlatInr                   BigInt                 @default(0)
+  feePercentBps                Int                    @default(0)
+  /// TOTAL_VALUE | ANNUAL_VALUE
+  feePercentBase               String                 @default("TOTAL_VALUE")
+  feeMinInr                    BigInt                 @default(0)
+  feeMaxInr                    BigInt                 @default(0)
+  taxBps                       Int                    @default(1800)
+  feeRefundableOnRejection     Boolean                @default(false)
+
+  // ---- Agency commission ----------------------------------------------------
+  commissionBps                Int                    @default(800)
+  universityCommissionShareBps Int                    @default(0)
+
+  // ---- Seat inventory -------------------------------------------------------
+  seatsTotal                   Int
+  seatsReserved                Int                    @default(0)
+  seatsAwarded                 Int                    @default(0)
+
+  /// DRAFT | PUBLISHED | CLOSED | ARCHIVED
+  status                       String                 @default("DRAFT")
+  publishedAt                  DateTime?
+  createdById                  String?                @db.Uuid
+  createdAt                    DateTime               @default(now())
+  updatedAt                    DateTime               @updatedAt
+  reservations                 SeatReservation[]
+
+  @@index([universityId, status])
+  @@index([status, applicationClosesAt])
+  @@map("scholarship_programs")
+}
+
+/// A seat held for an application between university approval and agreement signing.
+model SeatReservation {
+  id            String             @id @default(uuid()) @db.Uuid
+  programId     String             @db.Uuid
+  program       ScholarshipProgram @relation(fields: [programId], references: [id])
+  applicationId String             @unique @db.Uuid
+  /// HELD | CONFIRMED | RELEASED
+  status        String             @default("HELD")
+  heldAt        DateTime           @default(now())
+  confirmedAt   DateTime?
+  releasedAt    DateTime?
+  releaseReason String?
+
+  @@index([programId, status])
+  @@map("seat_reservations")
+}
+
+// ---------------------------------------------------------------------------
+// Common tables required by @aci/nest-common (outbox, inbox, audit).
+// ---------------------------------------------------------------------------
+
+model OutboxEvent {
+  id          String    @id @db.Uuid
+  type        String
+  payload     Json
+  createdAt   DateTime  @default(now()) @map("created_at")
+  publishedAt DateTime? @map("published_at")
+  attempts    Int       @default(0)
+  lastError   String?   @map("last_error")
+
+  @@index([publishedAt, createdAt])
+  @@map("outbox_events")
+}
+
+model ProcessedEvent {
+  eventId     String   @map("event_id") @db.Uuid
+  handler     String
+  processedAt DateTime @default(now()) @map("processed_at")
+
+  @@id([eventId, handler])
+  @@map("processed_events")
+}
+
+model AuditLog {
+  id         String   @id @default(uuid()) @db.Uuid
+  actorId    String?  @map("actor_id")
+  actorRole  String?  @map("actor_role")
+  action     String
+  entityType String   @map("entity_type")
+  entityId   String   @map("entity_id")
+  before     Json?
+  after      Json?
+  ip         String?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([entityType, entityId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}

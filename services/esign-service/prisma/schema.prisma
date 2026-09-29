@@ -1,0 +1,140 @@
+// esign-service: versioned agreement templates, envelopes (DocuSign or local mock), signing audit trail
+
+generator client {
+  provider      = "prisma-client-js"
+  output        = "../src/generated/prisma"
+  binaryTargets = ["native", "debian-openssl-3.0.x", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("ESIGN_DATABASE_URL")
+}
+
+/// Legal text is versioned: an envelope always records exactly which version was signed.
+model AgreementTemplate {
+  id           String     @id @default(uuid()) @db.Uuid
+  /// SCHOLARSHIP_AWARD | AGENCY | SCHOLARSHIP_RENEWAL | AGENCY_RENEWAL
+  type         String
+  version      Int
+  title        String
+  /// Lightweight markup: "# Heading", "## Sub-heading", "- bullet", blank line = new paragraph, {{mergeField}}
+  body         String
+  /// Optional university-specific override
+  universityId String?    @db.Uuid
+  active       Boolean    @default(false)
+  createdById  String?    @db.Uuid
+  createdAt    DateTime   @default(now())
+  envelopes    Envelope[]
+
+  @@unique([type, universityId, version])
+  @@index([type, active])
+  @@map("agreement_templates")
+}
+
+model Envelope {
+  id                 String              @id @default(uuid()) @db.Uuid
+  agreementType      String
+  templateId         String              @db.Uuid
+  template           AgreementTemplate   @relation(fields: [templateId], references: [id])
+  templateVersion    Int
+  title              String
+  /// AWARD | AWARD_YEAR
+  referenceType      String
+  referenceId        String              @db.Uuid
+  signerUserId       String              @db.Uuid
+  signerName         String
+  signerEmail        String
+  signerPhone        String?
+  guardian           Json?
+  mergeFields        Json
+  /// SHA-256 of the exact PDF that was sent for signature
+  documentSha256     String
+  unsignedDocumentId String?             @db.Uuid
+  /// Signature line coordinates in the generated PDF (used by in-app signing)
+  signatureAnchors   Json?
+  signedDocumentId   String?             @db.Uuid
+  /// DOCUSIGN | MOCK
+  provider           String
+  providerEnvelopeId String?
+  /// CREATED | SENT | VIEWED | SIGNED | DECLINED | VOIDED | EXPIRED
+  status             String              @default("CREATED")
+  guardianSignedAt   DateTime?
+  sentAt             DateTime?
+  viewedAt           DateTime?
+  signedAt           DateTime?
+  declinedAt         DateTime?
+  declineReason      String?
+  voidedAt           DateTime?
+  voidReason         String?
+  expiresAt          DateTime
+  remindersSent      Int                 @default(0)
+  lastReminderAt     DateTime?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  events             EnvelopeEventLog[]
+
+  @@index([referenceType, referenceId])
+  @@index([signerUserId, status])
+  @@index([status, expiresAt])
+  @@index([provider, providerEnvelopeId])
+  @@map("envelopes")
+}
+
+/// Tamper-evident trail of everything that happened to an envelope (sent, viewed, signed, IPs...)
+model EnvelopeEventLog {
+  id         String   @id @default(uuid()) @db.Uuid
+  envelopeId String   @db.Uuid
+  envelope   Envelope @relation(fields: [envelopeId], references: [id], onDelete: Cascade)
+  event      String
+  detail     Json?
+  ip         String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  @@index([envelopeId, createdAt])
+  @@map("envelope_events")
+}
+
+// ---------------------------------------------------------------------------
+// Common tables required by @aci/nest-common (outbox, inbox, audit).
+// ---------------------------------------------------------------------------
+
+model OutboxEvent {
+  id          String    @id @db.Uuid
+  type        String
+  payload     Json
+  createdAt   DateTime  @default(now()) @map("created_at")
+  publishedAt DateTime? @map("published_at")
+  attempts    Int       @default(0)
+  lastError   String?   @map("last_error")
+
+  @@index([publishedAt, createdAt])
+  @@map("outbox_events")
+}
+
+model ProcessedEvent {
+  eventId     String   @map("event_id") @db.Uuid
+  handler     String
+  processedAt DateTime @default(now()) @map("processed_at")
+
+  @@id([eventId, handler])
+  @@map("processed_events")
+}
+
+model AuditLog {
+  id         String   @id @default(uuid()) @db.Uuid
+  actorId    String?  @map("actor_id")
+  actorRole  String?  @map("actor_role")
+  action     String
+  entityType String   @map("entity_type")
+  entityId   String   @map("entity_id")
+  before     Json?
+  after      Json?
+  ip         String?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([entityType, entityId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}

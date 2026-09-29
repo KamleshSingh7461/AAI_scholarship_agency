@@ -1,0 +1,219 @@
+// finance-service: double-entry ledger for scholarship revenue/expense, FX, disbursements, commission, reports
+
+generator client {
+  provider      = "prisma-client-js"
+  output        = "../src/generated/prisma"
+  binaryTargets = ["native", "debian-openssl-3.0.x", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("FINANCE_DATABASE_URL")
+}
+
+/// USD→INR rates. Awards snapshot the rate at grant time, so later changes never restate history.
+model FxRate {
+  id            String   @id @default(uuid()) @db.Uuid
+  base          String   @default("USD")
+  quote         String   @default("INR")
+  /// rate × 10000 (4 decimal places), e.g. 83.2500 → 832500
+  rate4         Int
+  effectiveDate DateTime @db.Date
+  /// MANUAL | API | DEFAULT
+  source        String   @default("MANUAL")
+  createdById   String?  @db.Uuid
+  createdAt     DateTime @default(now())
+
+  @@unique([base, quote, effectiveDate])
+  @@map("fx_rates")
+}
+
+/// Finance's own read-model of each award, built from award.* events.
+model AwardLedger {
+  awardId                      String    @id @db.Uuid
+  awardNo                      String    @unique
+  athleteUserId                String    @db.Uuid
+  athleteName                  String
+  athleteCode                  String
+  whatsappNumber               String?
+  sport                        String?
+  universityId                 String    @db.Uuid
+  universityName               String
+  programId                    String    @db.Uuid
+  programName                  String
+  durationYears                Int
+  currency                     String
+  tuitionPerYear               BigInt
+  roomPerYear                  BigInt
+  foodPerYear                  BigInt
+  otherPerYear                 BigInt
+  annualValue                  BigInt
+  totalValue                   BigInt
+  usdInrRate4                  Int
+  commissionBps                Int
+  universityCommissionShareBps Int
+  grantDate                    DateTime
+  startDate                    DateTime  @db.Date
+  endDate                      DateTime  @db.Date
+  /// Mirrors the award status (ACTIVE, SUSPENDED, REVOKED, COMPLETED...)
+  status                       String
+  universityConfirmationStatus String    @default("PENDING")
+  universityConfirmedAt        DateTime?
+  revokedAt                    DateTime?
+  createdAt                    DateTime  @default(now())
+  updatedAt                    DateTime  @updatedAt
+  schedule                     ExpenseSchedule[]
+
+  @@index([universityId])
+  @@index([grantDate])
+  @@map("award_ledgers")
+}
+
+model JournalEntry {
+  id              String        @id @default(uuid()) @db.Uuid
+  entryNo         String        @unique
+  entryDate       DateTime      @db.Date
+  /// SCHOLARSHIP_GRANT | EXPENSE_RECOGNITION | UNIVERSITY_DELIVERY | DISBURSEMENT | COMMISSION | FEE_INCOME | FEE_REFUND | REVENUE_REVERSAL | RATABLE_REVENUE
+  type            String
+  awardId         String?       @db.Uuid
+  referenceType   String?
+  referenceId     String?
+  /// Idempotency key: one journal entry per business fact (e.g. "grant:<awardId>")
+  idempotencyKey  String        @unique
+  currency        String
+  amount          BigInt
+  amountInr       BigInt
+  amountUsd       BigInt
+  usdInrRate4     Int
+  universityId    String?       @db.Uuid
+  fiscalYear      String
+  memo            String?
+  createdAt       DateTime      @default(now())
+  lines           JournalLine[]
+
+  @@index([type, entryDate])
+  @@index([awardId])
+  @@index([fiscalYear, type])
+  @@map("journal_entries")
+}
+
+model JournalLine {
+  id      String       @id @default(uuid()) @db.Uuid
+  entryId String       @db.Uuid
+  entry   JournalEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  account String
+  debit   BigInt       @default(0)
+  credit  BigInt       @default(0)
+
+  @@index([account])
+  @@map("journal_lines")
+}
+
+/// The year-by-year expense plan created at grant; each row is recognised when that year is renewed.
+model ExpenseSchedule {
+  id             String      @id @default(uuid()) @db.Uuid
+  awardId        String      @db.Uuid
+  award          AwardLedger @relation(fields: [awardId], references: [awardId])
+  yearNumber     Int
+  periodStart    DateTime    @db.Date
+  periodEnd      DateTime    @db.Date
+  fiscalYear     String
+  amount         BigInt
+  universityFunded BigInt    @default(0)
+  companyFunded  BigInt      @default(0)
+  currency       String
+  /// SCHEDULED | RECOGNIZED | CANCELLED
+  status         String      @default("SCHEDULED")
+  recognizedAt   DateTime?
+  createdAt      DateTime    @default(now())
+
+  @@unique([awardId, yearNumber])
+  @@index([fiscalYear, status])
+  @@map("expense_schedules")
+}
+
+/// Actual cash paid out (e.g. hostel/food fees paid by the company to the university).
+model Disbursement {
+  id           String   @id @default(uuid()) @db.Uuid
+  awardId      String   @db.Uuid
+  yearNumber   Int?
+  universityId String   @db.Uuid
+  /// TUITION | ROOM | FOOD | OTHER
+  category     String
+  /// UNIVERSITY | STUDENT | VENDOR
+  payee        String   @default("UNIVERSITY")
+  amount       BigInt
+  currency     String
+  paidOn       DateTime @db.Date
+  reference    String?
+  notes        String?
+  documentId   String?  @db.Uuid
+  createdById  String   @db.Uuid
+  createdAt    DateTime @default(now())
+
+  @@index([awardId])
+  @@index([paidOn])
+  @@map("disbursements")
+}
+
+model ReportRun {
+  id              String   @id @default(uuid()) @db.Uuid
+  reportType      String
+  format          String
+  filters         Json
+  /// PENDING | READY | FAILED
+  status          String   @default("PENDING")
+  documentId      String?  @db.Uuid
+  fileName        String?
+  rowCount        Int?
+  error           String?
+  generatedById   String   @db.Uuid
+  generatedByName String?
+  createdAt       DateTime @default(now())
+
+  @@index([createdAt])
+  @@map("report_runs")
+}
+
+// ---------------------------------------------------------------------------
+// Common tables required by @aci/nest-common (outbox, inbox, audit).
+// ---------------------------------------------------------------------------
+
+model OutboxEvent {
+  id          String    @id @db.Uuid
+  type        String
+  payload     Json
+  createdAt   DateTime  @default(now()) @map("created_at")
+  publishedAt DateTime? @map("published_at")
+  attempts    Int       @default(0)
+  lastError   String?   @map("last_error")
+
+  @@index([publishedAt, createdAt])
+  @@map("outbox_events")
+}
+
+model ProcessedEvent {
+  eventId     String   @map("event_id") @db.Uuid
+  handler     String
+  processedAt DateTime @default(now()) @map("processed_at")
+
+  @@id([eventId, handler])
+  @@map("processed_events")
+}
+
+model AuditLog {
+  id         String   @id @default(uuid()) @db.Uuid
+  actorId    String?  @map("actor_id")
+  actorRole  String?  @map("actor_role")
+  action     String
+  entityType String   @map("entity_type")
+  entityId   String   @map("entity_id")
+  before     Json?
+  after      Json?
+  ip         String?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([entityType, entityId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}

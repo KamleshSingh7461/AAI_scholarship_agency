@@ -1,0 +1,90 @@
+# Local backing services only. Run the microservices on the host with `npm run dev`,
+# or run everything in containers with docker-compose.yml.
+name: aci-infra
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_SUPERUSER:-aci_admin}
+      POSTGRES_PASSWORD: ${POSTGRES_SUPERUSER_PASSWORD:-aci_admin_local_pw}
+      POSTGRES_DB: postgres
+      ACI_SERVICE_DB_PASSWORD: ${SERVICE_DB_PASSWORD:-aci_local_pw}
+    ports:
+      - "${POSTGRES_HOST_PORT:-55432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ../postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_SUPERUSER:-aci_admin} -d postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "${REDIS_HOST_PORT:-6379}:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      retries: 20
+
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-aci}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-aci_local_pw}
+    ports:
+      - "${RABBITMQ_HOST_PORT:-5672}:5672"
+      - "${RABBITMQ_UI_PORT:-15672}:15672"
+    volumes:
+      - rabbitdata:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      retries: 20
+
+  # S3-compatible object storage for local development (MinIO no longer publishes free images).
+  # The document-service creates the bucket on startup when APP_ENV is not production.
+  seaweedfs:
+    image: chrislusf/seaweedfs:latest
+    restart: unless-stopped
+    environment:
+      S3_KEY: ${S3_ACCESS_KEY_ID:-aci_minio}
+      S3_SECRET: ${S3_SECRET_ACCESS_KEY:-aci_minio_local_pw}
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        cat > /tmp/s3.json <<EOF
+        {"identities":[{"name":"aci-local","credentials":[{"accessKey":"$$S3_KEY","secretKey":"$$S3_SECRET"}],"actions":["Admin","Read","List","Tagging","Write"]}]}
+        EOF
+        exec weed server -dir=/data -s3 -s3.port=8333 -s3.config=/tmp/s3.json -master.volumeSizeLimitMB=256
+    ports:
+      - "${S3_HOST_PORT:-9000}:8333"   # S3 API (S3_ENDPOINT)
+      - "${S3_UI_PORT:-8888}:8888"     # file browser
+    volumes:
+      - s3data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:8888/ || exit 1"]
+      interval: 5s
+      retries: 30
+
+  mailpit:
+    image: axllent/mailpit:latest
+    restart: unless-stopped
+    ports:
+      - "${MAILPIT_SMTP_PORT:-1025}:1025"
+      - "${MAILPIT_UI_PORT:-8025}:8025"
+
+volumes:
+  pgdata:
+  redisdata:
+  rabbitdata:
+  s3data:

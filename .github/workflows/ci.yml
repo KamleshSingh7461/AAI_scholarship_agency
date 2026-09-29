@@ -1,0 +1,85 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env: { POSTGRES_USER: ci, POSTGRES_PASSWORD: ci, POSTGRES_DB: postgres }
+        ports: ["5432:5432"]
+        options: --health-cmd "pg_isready -U ci" --health-interval 5s --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci --no-audit --no-fund
+      - name: Build shared packages
+        run: npm run build:packages
+      - name: Unit tests
+        run: npm test -w @aci/contracts
+      - name: Generate Prisma clients
+        run: npm run prisma:generate
+      - name: Build services, gateway and web apps
+        run: npm run build -ws --if-present
+      - name: Migrations apply cleanly to empty databases
+        env:
+          PGPASSWORD: ci
+        run: |
+          for s in auth athlete university application payment esign document notification finance; do
+            psql -h localhost -U ci -d postgres -c "CREATE DATABASE aci_${s};"
+            export "$(echo $s | tr a-z A-Z)_DATABASE_URL=postgresql://ci:ci@localhost:5432/aci_${s}?schema=public"
+          done
+          npm run db:deploy
+
+  images:
+    if: github.event_name == 'push'
+    needs: build-test
+    runs-on: ubuntu-latest
+    permissions: { contents: read, packages: write }
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: aci-auth-service, dockerfile: services/auth-service/Dockerfile }
+          - { name: aci-athlete-service, dockerfile: services/athlete-service/Dockerfile }
+          - { name: aci-university-service, dockerfile: services/university-service/Dockerfile }
+          - { name: aci-application-service, dockerfile: services/application-service/Dockerfile }
+          - { name: aci-payment-service, dockerfile: services/payment-service/Dockerfile }
+          - { name: aci-esign-service, dockerfile: services/esign-service/Dockerfile }
+          - { name: aci-document-service, dockerfile: services/document-service/Dockerfile }
+          - { name: aci-notification-service, dockerfile: services/notification-service/Dockerfile }
+          - { name: aci-finance-service, dockerfile: services/finance-service/Dockerfile }
+          - { name: aci-api-gateway, dockerfile: services/api-gateway/Dockerfile }
+          - { name: aci-migrator, dockerfile: infra/docker/migrator.Dockerfile }
+          - { name: aci-web-public, dockerfile: apps/web-public/Dockerfile }
+          - { name: aci-web-student, dockerfile: apps/web-student/Dockerfile }
+          - { name: aci-web-admin, dockerfile: apps/web-admin/Dockerfile }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with: { registry: ghcr.io, username: "${{ github.actor }}", password: "${{ secrets.GITHUB_TOKEN }}" }
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          push: true
+          build-args: |
+            NEXT_PUBLIC_STUDENT_APP_URL=${{ vars.STUDENT_APP_URL }}
+            NEXT_PUBLIC_PUBLIC_SITE_URL=${{ vars.PUBLIC_SITE_URL }}
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/${{ matrix.name }}:${{ github.sha }}
+            ghcr.io/${{ github.repository_owner }}/${{ matrix.name }}:${{ github.ref_type == 'tag' && github.ref_name || 'main' }}
+          cache-from: type=gha,scope=${{ matrix.name }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.name }}

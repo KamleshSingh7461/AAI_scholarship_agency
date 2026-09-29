@@ -1,0 +1,108 @@
+# PRODUCTION stack for a single VM / VPS (e.g. 8 vCPU / 16 GB). Uses MANAGED Postgres, Redis, RabbitMQ
+# and S3 (recommended: AWS RDS / ElastiCache / Amazon MQ or CloudAMQP / S3 in ap-south-1, or equivalents).
+# TLS is terminated by Caddy with automatic Let's Encrypt certificates.
+#
+#   cp env/production.env.example env/production.env   # fill in real secrets (never commit)
+#   docker compose -f infra/docker/docker-compose.prod.yml --env-file env/production.env run --rm migrator
+#   docker compose -f infra/docker/docker-compose.prod.yml --env-file env/production.env up -d
+#
+# Images are built by CI (.github/workflows/ci.yml) and pulled by tag: set IMAGE_REGISTRY and IMAGE_TAG.
+name: aci-prod
+
+x-service: &service
+  restart: always
+  env_file: ../../env/production.env
+  networks: [backend]
+  logging:
+    driver: json-file
+    options: { max-size: "20m", max-file: "5" }
+  deploy:
+    resources:
+      limits: { memory: 512M }
+
+services:
+  migrator:
+    image: ${IMAGE_REGISTRY}/aci-migrator:${IMAGE_TAG}
+    env_file: ../../env/production.env
+    networks: [backend]
+    restart: "no"
+    profiles: ["migrate"]
+
+  auth-service:
+    <<: *service
+    image: ${IMAGE_REGISTRY}/aci-auth-service:${IMAGE_TAG}
+  athlete-service:
+    <<: *service
+    image: ${IMAGE_REGISTRY}/aci-athlete-service:${IMAGE_TAG}
+  university-service:
+    <<: *service
+    image: ${IMAGE_REGISTRY}/aci-university-service:${IMAGE_TAG}
+  application-service:
+    <<: *service
+    image: ${IMAGE_REGISTRY}/aci-application-service:${IMAGE_TAG}
+  payment-service:
+    <<: *service
+    image: ${IMAGE_REGISTRY}/aci-payment-service:${IMAGE_TAG}
+  esign-service:
+    <<: *service
+    image: ${IMAGE_REGISTRY}/aci-esign-service:${IMAGE_TAG}
+  document-service:
+    <<: *service
+    image: ${IMAGE_REGISTRY}/aci-document-service:${IMAGE_TAG}
+  notification-service:
+    <<: *service
+    image: ${IMAGE_REGISTRY}/aci-notification-service:${IMAGE_TAG}
+  finance-service:
+    <<: *service
+    image: ${IMAGE_REGISTRY}/aci-finance-service:${IMAGE_TAG}
+    deploy:
+      resources:
+        limits: { memory: 1G }
+
+  api-gateway:
+    <<: *service
+    image: ${IMAGE_REGISTRY}/aci-api-gateway:${IMAGE_TAG}
+    networks: [backend, edge]
+
+  web-public:
+    image: ${IMAGE_REGISTRY}/aci-web-public:${IMAGE_TAG}
+    restart: always
+    environment: { API_GATEWAY_URL: "http://api-gateway:8080" }
+    networks: [edge]
+  web-student:
+    image: ${IMAGE_REGISTRY}/aci-web-student:${IMAGE_TAG}
+    restart: always
+    environment: { API_GATEWAY_URL: "http://api-gateway:8080" }
+    networks: [edge]
+  web-admin:
+    image: ${IMAGE_REGISTRY}/aci-web-admin:${IMAGE_TAG}
+    restart: always
+    environment: { API_GATEWAY_URL: "http://api-gateway:8080" }
+    networks: [edge]
+
+  caddy:
+    image: caddy:2-alpine
+    restart: always
+    ports: ["80:80", "443:443", "443:443/udp"]
+    environment:
+      PUBLIC_DOMAIN: ${PUBLIC_DOMAIN}
+      STUDENT_DOMAIN: ${STUDENT_DOMAIN}
+      ADMIN_DOMAIN: ${ADMIN_DOMAIN}
+      API_DOMAIN: ${API_DOMAIN}
+      ACME_EMAIL: ${ACME_EMAIL}
+      ADMIN_ALLOWED_IPS: ${ADMIN_ALLOWED_IPS:-0.0.0.0/0 ::/0}
+    volumes:
+      - ../caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks: [edge]
+    depends_on: [api-gateway, web-public, web-student, web-admin]
+
+networks:
+  # Services are only reachable from the gateway; nothing on `backend` is published to the host.
+  backend: { internal: false }
+  edge: {}
+
+volumes:
+  caddy_data:
+  caddy_config:

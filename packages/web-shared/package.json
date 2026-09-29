@@ -1,0 +1,32 @@
+{
+  "name": "@aci/web-shared",
+  "version": "0.1.0",
+  "private": true,
+  "sideEffects": false,
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@aci/contracts": "0.1.0",
+    "clsx": "^2.1.1",
+    "lucide-react": "0.577.0",
+    "swr": "^2.3.6"
+  },
+  "peerDependencies": {
+    "next": "^15.5.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0"
+  },
+  "exports": {
+    ".": "./src/index.ts",
+    "./ui": "./src/ui.tsx",
+    "./auth": "./src/auth.tsx",
+    "./otp-login": "./src/otp-login.tsx",
+    "./hooks": "./src/hooks.ts",
+    "./theme.css": "./src/theme.css"
+  }
+}
