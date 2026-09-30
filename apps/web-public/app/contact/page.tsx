@@ -1,5 +1,4 @@
 import type { Metadata } from 'next';
-import { Mail, MessageCircle, Phone } from 'lucide-react';
 
 export const metadata: Metadata = { title: 'Contact us' };
 
@@ -8,34 +7,38 @@ const PHONE = process.env.NEXT_PUBLIC_SUPPORT_PHONE ?? '';
 const WHATSAPP = process.env.NEXT_PUBLIC_SUPPORT_WHATSAPP ?? '';
 
 export default function ContactPage() {
+  const channels = [
+    { label: 'Email', value: EMAIL, href: `mailto:${EMAIL}` },
+    WHATSAPP && { label: 'WhatsApp', value: WHATSAPP, href: `https://wa.me/${WHATSAPP.replace(/\D/g, '')}` },
+    PHONE && { label: 'Phone', value: PHONE, href: `tel:${PHONE}` },
+  ].filter(Boolean) as { label: string; value: string; href: string }[];
+
   return (
-    <div className="mx-auto max-w-5xl px-4 py-14 sm:px-6">
-      <h1 className="text-4xl font-black tracking-tight text-slate-900">Contact us</h1>
-      <p className="mt-2 max-w-2xl text-slate-500">
-        Questions about a scholarship, your application or your yearly renewal? Reach our athlete support team. Please include your Athlete ID (for example
-        AC-01042) if you have one.
-      </p>
-      <div className="mt-10 grid gap-5 md:grid-cols-3">
-        <a href={`mailto:${EMAIL}`} className="rounded-2xl p-6 ring-1 ring-slate-200 hover:ring-brand-300">
-          <Mail className="size-6 text-brand-600" />
-          <p className="mt-4 font-bold text-slate-900">Email</p>
-          <p className="text-sm text-slate-600">{EMAIL}</p>
-        </a>
-        {WHATSAPP && (
-          <a href={`https://wa.me/${WHATSAPP.replace(/\D/g, '')}`} className="rounded-2xl p-6 ring-1 ring-slate-200 hover:ring-brand-300">
-            <MessageCircle className="size-6 text-accent-600" />
-            <p className="mt-4 font-bold text-slate-900">WhatsApp</p>
-            <p className="text-sm text-slate-600">{WHATSAPP}</p>
-          </a>
-        )}
-        {PHONE && (
-          <a href={`tel:${PHONE}`} className="rounded-2xl p-6 ring-1 ring-slate-200 hover:ring-brand-300">
-            <Phone className="size-6 text-slate-700" />
-            <p className="mt-4 font-bold text-slate-900">Phone</p>
-            <p className="text-sm text-slate-600">{PHONE}</p>
-          </a>
-        )}
+    <div className="mx-auto max-w-7xl px-4 pb-28 pt-12 sm:px-6">
+      <div className="grid grid-cols-1 gap-6 border-b-2 border-ink pb-10 lg:grid-cols-12 lg:items-end">
+        <div className="lg:col-span-8">
+          <p className="eyebrow text-brand-600">Athlete support</p>
+          <h1 className="display mt-3 text-[clamp(3.5rem,11vw,9rem)]">Talk to us.</h1>
+        </div>
+        <p className="text-ink/70 lg:col-span-4">
+          Questions about a scholarship, your application or your yearly renewal? Include your Athlete ID (for example AC-01042) if you have one — it helps
+          us find you faster.
+        </p>
       </div>
+
+      <ul>
+        {channels.map((c) => (
+          <li key={c.label} className="border-b border-ink/15">
+            <a href={c.href} className="group grid grid-cols-1 items-baseline gap-x-8 gap-y-2 py-8 transition-[padding] duration-300 hover:pl-3 md:grid-cols-[10rem_minmax(0,1fr)_auto]">
+              <span className="eyebrow text-ink/55">{c.label}</span>
+              <span className="display break-all text-[clamp(1.9rem,5vw,4rem)] transition-colors group-hover:text-brand-600">{c.value}</span>
+              <span className="eyebrow hidden md:inline">
+                Open <span className="arrow">→</span>
+              </span>
+            </a>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

@@ -5,7 +5,7 @@ export const metadata: Metadata = { title: 'About us' };
 
 export default function AboutPage() {
   return (
-    <ProsePage title="About Alumni Connect India">
+    <ProsePage eyebrow="About us" title="About Alumni Connect India">
       <p>
         Alumni Connect India runs the Alumni Association of India programme, operated by EUSAI Team Private Limited. We partner with universities to build
         official alumni associations and to place talented student-athletes on athletic scholarships.

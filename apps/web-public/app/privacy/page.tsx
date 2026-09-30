@@ -6,7 +6,7 @@ export const metadata: Metadata = { title: 'Privacy policy' };
 // Draft for legal review before launch (Digital Personal Data Protection Act, 2023).
 export default function PrivacyPage() {
   return (
-    <ProsePage title="Privacy policy" updated="September 2026">
+    <ProsePage eyebrow="Legal" title="Privacy policy" updated="September 2026">
       <p>
         This policy explains how Alumni Connect India Private Limited (“we”), collects and uses personal data of athletes, guardians,
         references and partner-university staff, in line with the Digital Personal Data Protection Act, 2023.

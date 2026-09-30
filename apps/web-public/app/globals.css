@@ -2,6 +2,579 @@
 @import "../../../packages/web-shared/src/theme.css";
 @source "../../../packages/web-shared/src";
 
+/*
+ * Public site only: a race-day programme look — warm paper, ink, and the brand red as the running-track
+ * surface. The portals keep the shared theme. Fonts come from next/font in app/layout.tsx.
+ */
+@theme inline {
+  --font-sans: var(--font-archivo), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+
+@theme {
+  --color-paper: #f3efe6;
+  --color-paper-2: #e9e2d3;
+  --color-chalk: #fffdf8;
+  --color-ink: #121110;
+}
+
+:root {
+  interpolate-size: allow-keywords;
+  scroll-padding-top: 6rem;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  :root {
+    scroll-behavior: smooth;
+  }
+}
+
 body {
-  @apply bg-slate-50 text-slate-800;
+  @apply bg-paper font-sans text-ink;
+}
+
+::selection {
+  background: var(--color-brand-600);
+  color: #fff;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-brand-600);
+  outline-offset: 3px;
+}
+
+@layer components {
+  /* ---- Type ------------------------------------------------------------------------------ */
+  .display {
+    font-weight: 900;
+    font-stretch: 62%;
+    text-transform: uppercase;
+    line-height: 0.86;
+    letter-spacing: -0.005em;
+  }
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+  .skip-link {
+    position: absolute;
+    left: 1rem;
+    top: -4rem;
+    z-index: 60;
+    background: var(--color-ink);
+    color: var(--color-paper);
+    padding: 0.75rem 1rem;
+    font-weight: 600;
+  }
+  .skip-link:focus {
+    top: 1rem;
+  }
+
+  /* ---- Links & buttons ------------------------------------------------------------------- */
+  .link-underline {
+    background: linear-gradient(currentColor, currentColor) 0 100% / 100% 1.5px no-repeat;
+    padding-bottom: 2px;
+    transition: background-size 0.3s ease;
+  }
+  .link-underline:hover {
+    background-size: 0 1.5px;
+    background-position: 100% 100%;
+  }
+  .link-grow {
+    background: linear-gradient(currentColor, currentColor) 0 100% / 0 1.5px no-repeat;
+    padding-bottom: 2px;
+    transition: background-size 0.3s ease;
+  }
+  .link-grow:hover,
+  .link-grow[aria-current='page'] {
+    background-size: 100% 1.5px;
+  }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    height: 3.5rem;
+    padding: 0 1.75rem;
+    border-radius: 4px;
+    font-weight: 700;
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+  .btn-sm {
+    height: 2.75rem;
+    padding: 0 1.1rem;
+    font-size: 0.95rem;
+  }
+  .btn-ink {
+    background: var(--color-ink);
+    color: var(--color-paper);
+  }
+  .btn-ink:hover {
+    background: var(--color-brand-600);
+    color: #fff;
+  }
+  .btn-paper {
+    background: var(--color-paper);
+    color: var(--color-ink);
+  }
+  .btn-paper:hover {
+    background: var(--color-brand-600);
+    color: #fff;
+  }
+  .btn-red {
+    background: var(--color-brand-600);
+    color: #fff;
+  }
+  .btn-red:hover {
+    background: var(--color-ink);
+  }
+  .arrow {
+    display: inline-block;
+    transition: transform 0.25s ease;
+  }
+  a:hover > .arrow,
+  button:hover > .arrow {
+    transform: translateX(4px);
+  }
+
+  /* ---- Ticker ---------------------------------------------------------------------------- */
+  .ticker {
+    overflow: hidden;
+    white-space: nowrap;
+  }
+  .ticker-track {
+    display: inline-flex;
+    animation: ticker 45s linear infinite;
+  }
+  .ticker:hover .ticker-track {
+    animation-play-state: paused;
+  }
+
+  .live-dot {
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 999px;
+    background: var(--color-brand-600);
+    box-shadow: 0 0 0 0 rgb(208 38 46 / 0.55);
+    animation: pulse 1.8s ease-out infinite;
+  }
+
+  /* ---- Hero ------------------------------------------------------------------------------ */
+  .hero-title {
+    font-size: clamp(3.6rem, 15.5vw, 14rem);
+  }
+  .rise {
+    display: block;
+    overflow: hidden;
+    padding-top: 0.06em;
+    margin-top: -0.06em;
+  }
+  .rise > span {
+    display: block;
+    animation: rise 1s cubic-bezier(0.2, 0.7, 0.1, 1) both;
+    animation-delay: calc(var(--i, 0) * 110ms + 80ms);
+  }
+  .finish-word {
+    position: relative;
+    display: inline-block;
+    color: var(--color-brand-600);
+  }
+  .finish-word::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0.1em;
+    bottom: -0.02em;
+    height: 0.07em;
+    background: var(--color-ink);
+    transform-origin: left;
+    animation: tape 0.9s cubic-bezier(0.7, 0, 0.2, 1) 0.9s both;
+  }
+
+  /* ---- Scoreboard / odometer ------------------------------------------------------------- */
+  .odo {
+    display: inline-flex;
+    align-items: flex-start;
+    font-variant-numeric: tabular-nums;
+  }
+  .odo-unit {
+    font-size: 0.5em;
+    line-height: 1;
+    margin: 0.1em 0.06em 0 0;
+  }
+  .odo-d {
+    display: inline-block;
+    height: 1em;
+    overflow: hidden;
+    line-height: 1;
+  }
+  .odo-s {
+    display: flex;
+    flex-direction: column;
+    transform: translateY(calc(var(--d) * -1em));
+    animation: odo 1.9s cubic-bezier(0.16, 0.84, 0.24, 1) both;
+    animation-delay: calc(var(--i, 0) * 90ms + 450ms);
+  }
+  .odo-s > span {
+    height: 1em;
+    line-height: 1;
+  }
+
+  /* ---- Track (How it works) ------------------------------------------------------------- */
+  .track {
+    background-color: var(--color-brand-600);
+    background-image:
+      radial-gradient(rgb(0 0 0 / 0.09) 0.8px, transparent 1.2px),
+      radial-gradient(rgb(255 255 255 / 0.06) 0.8px, transparent 1.2px);
+    background-size: 5px 5px, 7px 7px;
+    background-position: 0 0, 2px 3px;
+  }
+  .lanes {
+    position: relative;
+    border-top: 3px solid rgb(255 255 255 / 0.92);
+  }
+  .lane {
+    position: relative;
+    border-bottom: 3px solid rgb(255 255 255 / 0.92);
+  }
+  .lane-no {
+    font-size: clamp(4.5rem, 10vw, 8rem);
+    line-height: 0.8;
+  }
+  .lane-run {
+    position: absolute;
+    left: 0;
+    bottom: 0.9rem;
+    height: 2px;
+    width: calc(100% - 1.5rem);
+    background: rgb(255 255 255 / 0.45);
+  }
+  .lane-run::after {
+    content: '';
+    position: absolute;
+    right: -5px;
+    top: -4px;
+    width: 10px;
+    height: 10px;
+    border-radius: 999px;
+    background: #fff;
+  }
+  .finish-strip {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 1.5rem;
+    background: repeating-conic-gradient(var(--color-ink) 0 25%, #fff 0 50%) 0 0 / 0.75rem 0.75rem;
+  }
+  .checker {
+    background: repeating-conic-gradient(var(--color-ink) 0 25%, var(--color-paper) 0 50%) 0 0 / 1.25rem 1.25rem;
+  }
+
+  /* ---- Race bib (program card) ----------------------------------------------------------- */
+  .bib {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    background: var(--color-chalk);
+    border-radius: 10px;
+    box-shadow: 0 1px 0 rgb(18 17 16 / 0.06), 0 18px 30px -18px rgb(18 17 16 / 0.35);
+    transform-origin: 50% 0;
+    transition: transform 0.45s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.45s ease;
+  }
+  .bib:hover {
+    transform: rotate(-1.4deg) translateY(-4px);
+    box-shadow: 0 1px 0 rgb(18 17 16 / 0.06), 0 28px 40px -20px rgb(18 17 16 / 0.45);
+  }
+  .bib-pin {
+    position: absolute;
+    width: 0.6rem;
+    height: 0.6rem;
+    border-radius: 999px;
+    background: var(--color-paper);
+    box-shadow: inset 0 1px 2px rgb(0 0 0 / 0.45);
+  }
+  .bib-band {
+    border-radius: 10px 10px 0 0;
+    background: var(--color-brand-600);
+    color: #fff;
+  }
+  .bib-stub {
+    position: relative;
+    margin-top: auto;
+    border-top: 2px dashed rgb(18 17 16 / 0.18);
+  }
+  .bib-stub::before,
+  .bib-stub::after {
+    content: '';
+    position: absolute;
+    top: -0.6rem;
+    width: 1.1rem;
+    height: 1.1rem;
+    border-radius: 999px;
+    background: var(--color-paper);
+  }
+  .bib-stub::before {
+    left: -0.55rem;
+  }
+  .bib-stub::after {
+    right: -0.55rem;
+  }
+  .meter {
+    height: 0.35rem;
+    background: rgb(18 17 16 / 0.1);
+    overflow: hidden;
+  }
+  .meter > span {
+    display: block;
+    height: 100%;
+    background: var(--color-brand-600);
+  }
+
+  /* ---- Receipt --------------------------------------------------------------------------- */
+  .receipt-slot {
+    height: 0.85rem;
+    border-radius: 999px;
+    background: #000;
+    box-shadow: inset 0 -2px 0 rgb(255 255 255 / 0.12);
+  }
+  .receipt-clip {
+    overflow: hidden;
+    margin: -0.35rem 0.9rem 0;
+    padding-bottom: 2rem;
+    filter: drop-shadow(0 18px 24px rgb(0 0 0 / 0.45));
+  }
+  .receipt {
+    --z: 9px;
+    background: var(--color-chalk);
+    color: var(--color-ink);
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    line-height: 1.55;
+    padding: 1.75rem 1.5rem calc(1.75rem + var(--z));
+    mask:
+      linear-gradient(#000 0 0) top / 100% calc(100% - var(--z)) no-repeat,
+      conic-gradient(from -45deg at 50% 100%, #000 90deg, #0000 0) bottom / calc(2 * var(--z)) var(--z) repeat-x;
+  }
+  .receipt hr {
+    border: 0;
+    border-top: 1px dashed rgb(18 17 16 / 0.35);
+    margin: 0.85rem 0;
+  }
+  .barcode {
+    height: 2.5rem;
+    background: repeating-linear-gradient(
+      90deg,
+      var(--color-ink) 0 2px,
+      transparent 2px 4px,
+      var(--color-ink) 4px 5px,
+      transparent 5px 8px,
+      var(--color-ink) 8px 11px,
+      transparent 11px 12px,
+      var(--color-ink) 12px 13px,
+      transparent 13px 16px
+    );
+  }
+
+  /* ---- FAQ ------------------------------------------------------------------------------- */
+  .faq summary {
+    list-style: none;
+    cursor: pointer;
+  }
+  .faq summary::-webkit-details-marker {
+    display: none;
+  }
+  .faq::details-content {
+    block-size: 0;
+    overflow: clip;
+    transition: block-size 0.35s ease, content-visibility 0.35s allow-discrete;
+  }
+  .faq[open]::details-content {
+    block-size: auto;
+  }
+  .plus {
+    position: relative;
+    flex: none;
+    width: 1.1rem;
+    height: 1.1rem;
+    transition: transform 0.3s ease;
+  }
+  .plus::before,
+  .plus::after {
+    content: '';
+    position: absolute;
+    inset: 50% 0 auto;
+    height: 2px;
+    margin-top: -1px;
+    background: currentColor;
+  }
+  .plus::after {
+    transform: rotate(90deg);
+  }
+  .faq[open] .plus {
+    transform: rotate(45deg);
+    color: var(--color-brand-600);
+  }
+
+  /* ---- Kit list -------------------------------------------------------------------------- */
+  .tick {
+    position: relative;
+    flex: none;
+    width: 1.5rem;
+    height: 1.5rem;
+    border: 2px solid var(--color-ink);
+    border-radius: 3px;
+    transition: background-color 0.2s ease;
+  }
+  .tick::after {
+    content: '';
+    position: absolute;
+    left: 0.4rem;
+    top: 0.1rem;
+    width: 0.45rem;
+    height: 0.8rem;
+    border: solid #fff;
+    border-width: 0 2.5px 2.5px 0;
+    transform: rotate(45deg) scale(0);
+    transition: transform 0.2s cubic-bezier(0.3, 1.6, 0.5, 1);
+  }
+  input:checked + .tick {
+    background: var(--color-brand-600);
+    border-color: var(--color-brand-600);
+  }
+  input:checked + .tick::after {
+    transform: rotate(45deg) scale(1);
+  }
+  input:focus-visible + .tick {
+    outline: 2px solid var(--color-brand-600);
+    outline-offset: 3px;
+  }
+
+  /* ---- Prose (about / legal) ------------------------------------------------------------- */
+  .prose-ac h2 {
+    margin-top: 3rem;
+    font-size: 1.5rem;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    color: var(--color-ink);
+  }
+  .prose-ac ul {
+    display: grid;
+    gap: 0.6rem;
+  }
+  .prose-ac li {
+    position: relative;
+    padding-left: 1.5rem;
+  }
+  .prose-ac li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0.62em;
+    width: 0.5rem;
+    height: 0.5rem;
+    background: var(--color-brand-600);
+  }
+  .square-list li {
+    position: relative;
+    padding-left: 1.5rem;
+  }
+  .square-list li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0.55em;
+    width: 0.5rem;
+    height: 0.5rem;
+    background: var(--color-brand-600);
+  }
+}
+
+/* ---- Scroll-linked motion (progressive: browsers without scroll timelines show the final state) */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .reveal {
+      animation-name: reveal;
+      animation-timing-function: linear;
+      animation-fill-mode: both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 70%;
+    }
+    .lane-run {
+      animation-name: run;
+      animation-timing-function: linear;
+      animation-fill-mode: both;
+      animation-timeline: view();
+      animation-range: entry 60% cover 55%;
+    }
+    .receipt {
+      animation-name: print;
+      animation-timing-function: linear;
+      animation-fill-mode: both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 40%;
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    animation-delay: 0ms !important;
+    transition-duration: 0.01ms !important;
+  }
+  .ticker-track {
+    animation: none;
+  }
+}
+
+@keyframes ticker {
+  to {
+    transform: translateX(-50%);
+  }
+}
+@keyframes pulse {
+  70% {
+    box-shadow: 0 0 0 0.6rem rgb(208 38 46 / 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgb(208 38 46 / 0);
+  }
+}
+@keyframes rise {
+  from {
+    transform: translateY(105%);
+  }
+}
+@keyframes tape {
+  from {
+    transform: scaleX(0);
+  }
+}
+@keyframes odo {
+  from {
+    transform: translateY(0);
+  }
+}
+@keyframes reveal {
+  from {
+    opacity: 0;
+    transform: translateY(2.5rem);
+  }
+}
+@keyframes run {
+  from {
+    width: 0;
+  }
+}
+@keyframes print {
+  from {
+    transform: translateY(-100%);
+  }
 }

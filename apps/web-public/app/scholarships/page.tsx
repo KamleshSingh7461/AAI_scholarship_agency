@@ -1,11 +1,12 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { Search } from 'lucide-react';
 import { ProgramCard } from '@/components/site';
 import { publicApi, type CatalogProgram, type CatalogStats } from '@/lib/api';
 
 export const metadata: Metadata = { title: 'Scholarships' };
 export const dynamic = 'force-dynamic';
+
+const field = 'h-12 w-full rounded-[4px] border border-ink/25 bg-chalk px-4 text-[15px] outline-none transition-colors focus:border-ink';
 
 export default async function ScholarshipsPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
   const sp = await searchParams;
@@ -17,6 +18,7 @@ export default async function ScholarshipsPage({ searchParams }: { searchParams:
     publicApi<CatalogStats>('/catalog/stats'),
   ]);
   const page = data?.page ?? 1;
+  const filtered = Boolean(sp.q || sp.sport || sp.durationYears);
   const link = (p: number) => {
     const n = new URLSearchParams(qs);
     n.set('page', String(p));
@@ -25,48 +27,92 @@ export default async function ScholarshipsPage({ searchParams }: { searchParams:
   };
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
-      <h1 className="text-4xl font-black tracking-tight text-slate-900">Athletic scholarships</h1>
-      <p className="mt-2 text-slate-500">All values are shown in Indian Rupees. Each scholarship lists exactly what it covers and what the application fee is.</p>
+    <div className="mx-auto max-w-7xl px-4 pb-28 pt-12 sm:px-6">
+      <div className="grid grid-cols-1 gap-6 border-b-2 border-ink pb-10 lg:grid-cols-12 lg:items-end">
+        <div className="lg:col-span-8">
+          <p className="eyebrow text-brand-600">Catalogue</p>
+          <h1 className="display mt-3 text-[clamp(3.25rem,9vw,7.5rem)]">Athletic scholarships</h1>
+        </div>
+        <p className="text-ink/70 lg:col-span-4">
+          All values are in Indian Rupees. Each scholarship lists exactly what it covers every year and what the application fee is.
+        </p>
+      </div>
 
-      <form className="mt-8 grid gap-3 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200 md:grid-cols-[1fr_200px_160px_auto]" action="/scholarships">
-        <label className="relative">
-          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
-          <input name="q" defaultValue={sp.q} placeholder="Search university or program" className="h-11 w-full rounded-lg border-0 pl-9 text-sm ring-1 ring-slate-300 focus:ring-2 focus:ring-brand-500" />
+      <form className="mt-8 grid grid-cols-1 gap-3 md:grid-cols-[minmax(0,1fr)_13rem_11rem_auto]" action="/scholarships" role="search">
+        <label>
+          <span className="sr-only">Search university or program</span>
+          <input name="q" defaultValue={sp.q} placeholder="Search university or program" className={field} />
         </label>
-        <select name="sport" defaultValue={sp.sport ?? ''} className="h-11 rounded-lg border-0 text-sm ring-1 ring-slate-300 focus:ring-2 focus:ring-brand-500">
-          <option value="">All sports</option>
-          {stats?.sports.map((s) => (
-            <option key={s}>{s}</option>
-          ))}
-        </select>
-        <select name="durationYears" defaultValue={sp.durationYears ?? ''} className="h-11 rounded-lg border-0 text-sm ring-1 ring-slate-300 focus:ring-2 focus:ring-brand-500">
-          <option value="">Any length</option>
-          <option value="4">4-year</option>
-          <option value="3">3-year</option>
-          <option value="2">2-year</option>
-        </select>
-        <button className="h-11 rounded-lg bg-brand-600 px-6 text-sm font-bold text-white hover:bg-brand-700">Search</button>
+        <label>
+          <span className="sr-only">Sport</span>
+          <select name="sport" defaultValue={sp.sport ?? ''} className={field}>
+            <option value="">All sports</option>
+            {stats?.sports.map((s) => (
+              <option key={s}>{s}</option>
+            ))}
+          </select>
+        </label>
+        <label>
+          <span className="sr-only">Length</span>
+          <select name="durationYears" defaultValue={sp.durationYears ?? ''} className={field}>
+            <option value="">Any length</option>
+            <option value="4">4-year</option>
+            <option value="3">3-year</option>
+            <option value="2">2-year</option>
+          </select>
+        </label>
+        <button className="btn btn-ink h-12">Search</button>
       </form>
 
       {!data ? (
-        <p className="mt-10 rounded-2xl bg-amber-50 p-6 text-amber-800 ring-1 ring-amber-200">Scholarships are temporarily unavailable. Please try again in a minute.</p>
+        <div className="mt-12 rounded-[6px] border-2 border-ink p-8">
+          <p className="eyebrow text-brand-600">Timeout called</p>
+          <p className="mt-2 text-xl font-semibold">Scholarships are temporarily unavailable.</p>
+          <p className="mt-1 text-ink/65">Please try again in a minute.</p>
+        </div>
       ) : data.items.length === 0 ? (
-        <p className="mt-10 rounded-2xl bg-slate-50 p-10 text-center text-slate-500 ring-1 ring-slate-200">No scholarships match your search.</p>
+        <div className="mt-12 rounded-[10px] border-2 border-dashed border-ink/25 p-10 text-center">
+          <p className="display text-6xl text-ink/20">No match</p>
+          <p className="mt-4 text-ink/65">No scholarships match your search.</p>
+          {filtered && (
+            <Link href="/scholarships" className="link-underline mt-4 inline-block font-semibold">
+              Clear filters
+            </Link>
+          )}
+        </div>
       ) : (
         <>
-          <p className="mt-8 text-sm text-slate-500">{data.total} scholarship{data.total === 1 ? '' : 's'}</p>
-          <div className="mt-4 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <div className="eyebrow mt-10 flex items-center justify-between text-ink/60">
+            <p>
+              {data.total} scholarship{data.total === 1 ? '' : 's'}
+            </p>
+            {filtered && (
+              <Link href="/scholarships" className="link-grow text-ink">
+                Clear filters
+              </Link>
+            )}
+          </div>
+          <div className="mt-6 grid grid-cols-1 gap-x-8 gap-y-12 md:grid-cols-2 lg:grid-cols-3">
             {data.items.map((p) => (
               <ProgramCard key={p.id} p={p} />
             ))}
           </div>
           {data.totalPages > 1 && (
-            <div className="mt-10 flex justify-center gap-2">
-              {page > 1 && <Link href={link(page - 1)} className="rounded-lg px-4 py-2 text-sm font-semibold ring-1 ring-slate-300">← Previous</Link>}
-              <span className="px-4 py-2 text-sm text-slate-500">Page {page} of {data.totalPages}</span>
-              {page < data.totalPages && <Link href={link(page + 1)} className="rounded-lg px-4 py-2 text-sm font-semibold ring-1 ring-slate-300">Next →</Link>}
-            </div>
+            <nav className="eyebrow mt-16 flex items-center justify-center gap-6" aria-label="Pagination">
+              {page > 1 && (
+                <Link href={link(page - 1)} className="btn btn-sm border border-ink">
+                  ← Previous
+                </Link>
+              )}
+              <span className="text-ink/60">
+                Page {page} of {data.totalPages}
+              </span>
+              {page < data.totalPages && (
+                <Link href={link(page + 1)} className="btn btn-sm btn-ink">
+                  Next →
+                </Link>
+              )}
+            </nav>
           )}
         </>
       )}

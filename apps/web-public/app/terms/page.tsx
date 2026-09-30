@@ -6,7 +6,7 @@ export const metadata: Metadata = { title: 'Terms and conditions' };
 // Draft for legal review before launch.
 export default function TermsPage() {
   return (
-    <ProsePage title="Terms and conditions" updated="September 2026">
+    <ProsePage eyebrow="Legal" title="Terms and conditions" updated="September 2026">
       <p>By creating an account on Alumni Connect India you agree to these terms.</p>
       <h2>Accounts</h2>
       <ul>
