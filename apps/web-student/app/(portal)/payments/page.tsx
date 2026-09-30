@@ -1,9 +1,8 @@
 'use client';
 import Link from 'next/link';
-import { CreditCard } from 'lucide-react';
 import { dateTime, money } from '@aci/web-shared';
 import { useApi } from '@aci/web-shared/hooks';
-import { Card, EmptyState, PageHeader, PageLoader, StatusBadge, Table, Td, Th } from '@aci/web-shared/ui';
+import { EmptyState, PageHeader, PageLoader, StatusBadge } from '@aci/web-shared/ui';
 
 interface Order {
   id: string;
@@ -23,40 +22,33 @@ export default function PaymentsPage() {
     <div>
       <PageHeader title="Payments" subtitle="Your application fee payments and receipts." />
       {data.items.length === 0 ? (
-        <EmptyState icon={<CreditCard className="size-8" />} title="No payments yet" />
+        <EmptyState title="No payments yet">Application fees you pay will appear here with a receipt.</EmptyState>
       ) : (
-        <Card padded={false}>
-          <Table>
-            <thead>
-              <tr>
-                <Th>Receipt</Th>
-                <Th>Description</Th>
-                <Th>Date</Th>
-                <Th className="text-right">Amount</Th>
-                <Th>Status</Th>
-                <Th />
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {data.items.map((o) => (
-                <tr key={o.id}>
-                  <Td className="font-mono text-xs">{o.orderNo}</Td>
-                  <Td>{o.description}</Td>
-                  <Td>{dateTime(o.paidAt ?? o.createdAt)}</Td>
-                  <Td className="text-right font-semibold">{money(o.amount, 'INR')}</Td>
-                  <Td><StatusBadge status={o.status} /></Td>
-                  <Td>
-                    {['PAID', 'REFUNDED', 'PARTIALLY_REFUNDED'].includes(o.status) && (
-                      <Link href={`/payments/${o.id}/receipt`} className="text-xs font-semibold text-brand-700 hover:underline">
-                        Receipt
-                      </Link>
-                    )}
-                  </Td>
-                </tr>
-              ))}
-            </tbody>
-          </Table>
-        </Card>
+        <ul className="-mt-4">
+          {data.items.map((o) => {
+            const hasReceipt = ['PAID', 'REFUNDED', 'PARTIALLY_REFUNDED'].includes(o.status);
+            return (
+              <li key={o.id} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-6 gap-y-2 border-b border-ink/15 py-5 md:grid-cols-[11rem_minmax(0,1fr)_8rem_auto_6rem]">
+                <span className="eyebrow text-[0.66rem] text-slate-500">
+                  {o.orderNo}
+                  <span className="mt-1 block text-slate-400">{dateTime(o.paidAt ?? o.createdAt)}</span>
+                </span>
+                <span className="col-span-2 min-w-0 font-semibold md:col-span-1">{o.description}</span>
+                <span className="display text-3xl tabular-nums md:text-right">{money(o.amount, 'INR')}</span>
+                <span className="justify-self-end md:justify-self-auto">
+                  <StatusBadge status={o.status} />
+                </span>
+                <span className="col-span-2 md:col-span-1 md:text-right">
+                  {hasReceipt && (
+                    <Link href={`/payments/${o.id}/receipt`} className="eyebrow link-grow text-[0.66rem] text-ink">
+                      Receipt →
+                    </Link>
+                  )}
+                </span>
+              </li>
+            );
+          })}
+        </ul>
       )}
     </div>
   );

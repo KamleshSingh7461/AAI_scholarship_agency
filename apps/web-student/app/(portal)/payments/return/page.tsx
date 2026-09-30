@@ -2,9 +2,9 @@
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useState } from 'react';
-import { CheckCircle2, Clock, XCircle } from 'lucide-react';
 import { apiPost, money } from '@aci/web-shared';
-import { Button, Card, PageLoader } from '@aci/web-shared/ui';
+import { PageLoader } from '@aci/web-shared/ui';
+import { ResultPanel } from '@/components/race';
 
 interface Order {
   id: string;
@@ -47,33 +47,35 @@ function ReturnInner() {
 
   const paid = order?.status === 'PAID';
   const failed = error || order?.status === 'FAILED' || order?.status === 'EXPIRED';
+  const primary = 'inline-flex h-12 items-center gap-3 rounded-[4px] bg-paper px-6 font-bold text-ink transition-colors hover:bg-brand-600 hover:text-white';
+  const secondary = 'inline-flex h-12 items-center gap-3 rounded-[4px] px-6 font-bold text-paper ring-1 ring-inset ring-paper/40 transition-colors hover:bg-paper hover:text-ink';
   return (
-    <div className="mx-auto max-w-lg py-10">
-      <Card>
-        <div className="flex flex-col items-center py-6 text-center">
-          {paid ? <CheckCircle2 className="size-14 text-accent-600" /> : failed ? <XCircle className="size-14 text-red-500" /> : <Clock className="size-14 text-amber-500" />}
-          <h1 className="mt-4 text-xl font-bold text-slate-900">{paid ? 'Payment successful' : failed ? 'Payment not completed' : 'Payment is processing'}</h1>
-          <p className="mt-2 text-sm text-slate-500">
-            {paid
-              ? `We received ${money(order!.amount, 'INR')} (receipt ${order!.orderNo}). Your application is now submitted for review.`
-              : failed
-                ? error ?? order?.failureReason ?? 'No money was taken. You can try again.'
-                : 'Your bank has not confirmed yet. This page will update, or check My applications in a few minutes.'}
-          </p>
-          <div className="mt-6 flex gap-3">
+    <div className="py-6">
+      <ResultPanel
+        state={paid ? 'success' : failed ? 'fail' : 'pending'}
+        eyebrow={paid ? `Receipt ${order!.orderNo}` : failed ? 'Payment' : 'Payment'}
+        title={paid ? 'Paid.' : failed ? 'Not completed.' : 'Processing…'}
+        actions={
+          <>
             {order && (
-              <Link href={`/applications/${order.referenceId}`}>
-                <Button variant={paid ? 'primary' : 'secondary'}>View application</Button>
+              <Link href={`/applications/${order.referenceId}`} className={paid ? primary : secondary}>
+                View application <span className="arrow">→</span>
               </Link>
             )}
             {paid && (
-              <Link href={`/payments/${order!.id}/receipt`}>
-                <Button variant="secondary">Receipt</Button>
+              <Link href={`/payments/${order!.id}/receipt`} className={secondary}>
+                Receipt
               </Link>
             )}
-          </div>
-        </div>
-      </Card>
+          </>
+        }
+      >
+        {paid
+          ? `We received ${money(order!.amount, 'INR')}. Your application is now submitted for review.`
+          : failed
+            ? error ?? order?.failureReason ?? 'No money was taken. You can try again.'
+            : 'Your bank has not confirmed yet. This page will update, or check My applications in a few minutes.'}
+      </ResultPanel>
     </div>
   );
 }

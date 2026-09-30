@@ -1,12 +1,11 @@
 'use client';
-import clsx from 'clsx';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { ArrowLeft, CreditCard, FileSignature } from 'lucide-react';
 import { apiPost, dateTime, money, statusLabel } from '@aci/web-shared';
 import { useApi } from '@aci/web-shared/hooks';
 import { Alert, Button, Card, Modal, PageHeader, PageLoader, StatusBadge, Textarea, useToast } from '@aci/web-shared/ui';
+import { BackLink, Ledger } from '@/components/race';
 import { startCheckout, type PaymentOrderResponse } from '@/lib/checkout';
 import type { Application } from '@/lib/types';
 
@@ -58,12 +57,11 @@ export default function ApplicationDetailPage() {
 
   return (
     <div>
-      <Link href="/applications" className="mb-4 inline-flex items-center gap-1 text-sm font-semibold text-slate-500 hover:text-slate-800">
-        <ArrowLeft className="size-4" /> My applications
-      </Link>
+      <BackLink href="/applications">My applications</BackLink>
       <PageHeader
+        breadcrumb={<span className="eyebrow">{a.applicationNo}</span>}
         title={a.programName}
-        subtitle={`${a.universityName} · ${a.applicationNo}`}
+        subtitle={a.universityName}
         actions={
           <>
             <StatusBadge status={a.status} />
@@ -77,19 +75,19 @@ export default function ApplicationDetailPage() {
       />
 
       {a.status === 'PAYMENT_PENDING' && (
-        <Alert tone="warning" className="mb-6" title="Pay the application fee to submit your application">
+        <Alert tone="warning" className="mb-8" title="Pay the application fee to submit your application">
           <div className="mt-2 flex flex-wrap items-center gap-4">
             <span>
               {money(a.feeTotalInr, 'INR')} ({a.feeExplanation} {money(a.feeBaseInr, 'INR')} + GST {money(a.feeTaxInr, 'INR')})
             </span>
-            <Button size="sm" loading={paying} onClick={pay} icon={<CreditCard className="size-4" />}>
-              Pay now
+            <Button size="sm" loading={paying} onClick={pay}>
+              Pay now <span className="arrow">→</span>
             </Button>
           </div>
         </Alert>
       )}
       {a.status === 'AGREEMENTS_PENDING' && (
-        <Alert tone="success" className="mb-6" title="Congratulations — the university approved you!">
+        <Alert tone="success" className="mb-8" title="Congratulations — the university approved you!">
           Sign your Scholarship Award Agreement and Agency Agreement to activate your scholarship.{' '}
           <Link href="/agreements" className="font-semibold underline">
             Sign now →
@@ -97,48 +95,66 @@ export default function ApplicationDetailPage() {
         </Alert>
       )}
       {terminalBad && a.rejectionReason && (
-        <Alert tone="error" className="mb-6" title={statusLabel(a.status)}>
+        <Alert tone="error" className="mb-8" title={statusLabel(a.status)}>
           {a.rejectionReason}
         </Alert>
       )}
 
       {!terminalBad && a.status !== 'PAYMENT_PENDING' && (
-        <Card className="mb-6">
-          <ol className="grid grid-cols-6 gap-2">
+        <section className="mb-10" aria-label="Application progress">
+          <div className="eyebrow mb-3 flex justify-between text-[0.66rem] text-slate-500">
+            <span>Race splits</span>
+            <span>
+              {Math.max(idx + 1, 0)} of {FLOW.length}
+            </span>
+          </div>
+          <ol className="grid grid-cols-6 gap-1.5">
             {FLOW.map((s, i) => (
-              <li key={s}>
-                <div className={clsx('h-1.5 rounded-full', i <= idx ? 'bg-accent-500' : 'bg-slate-200')} />
-                <p className={clsx('mt-2 text-[11px] font-semibold sm:text-xs', i <= idx ? 'text-slate-900' : 'text-slate-400')}>{FLOW_LABEL[s]}</p>
+              <li key={s} aria-current={i === idx ? 'step' : undefined}>
+                <div className="split" data-state={i < idx || a.status === 'AWARDED' ? 'done' : i === idx ? 'current' : undefined} />
+                <p className={`eyebrow mt-2.5 text-[0.66rem] ${i <= idx ? 'text-ink' : 'text-slate-400'}`}>
+                  {String(i + 1).padStart(2, '0')}
+                  <span className="hidden md:inline"> {FLOW_LABEL[s]}</span>
+                </p>
               </li>
             ))}
           </ol>
-        </Card>
+          <p className="eyebrow mt-3 text-[0.66rem] md:hidden">Now: {FLOW_LABEL[a.status] ?? statusLabel(a.status)}</p>
+        </section>
       )}
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Card title="Scholarship">
-          <dl className="grid grid-cols-2 gap-4 text-sm">
-            <div><dt className="text-slate-500">University</dt><dd className="font-semibold">{a.universityName}</dd></div>
-            <div><dt className="text-slate-500">Intake</dt><dd className="font-semibold">{a.academicYear}</dd></div>
-            <div><dt className="text-slate-500">Duration</dt><dd className="font-semibold">{a.durationYears} years</dd></div>
-            <div><dt className="text-slate-500">Value per year</dt><dd className="font-semibold">{money(a.annualValue, a.currency)}</dd></div>
-            <div><dt className="text-slate-500">Total value</dt><dd className="font-semibold text-accent-700">{money(a.totalValue, a.currency)}</dd></div>
-            <div><dt className="text-slate-500">Fee</dt><dd className="font-semibold">{a.feeTotalInr ? `${money(a.feeTotalInr, 'INR')} · ${statusLabel(a.paymentStatus)}` : 'None'}</dd></div>
-          </dl>
+          <Ledger
+            rows={[
+              ['University', a.universityName],
+              ['Intake', a.academicYear],
+              ['Duration', `${a.durationYears} years`],
+              ['Value per year', money(a.annualValue, a.currency)],
+              ['Total value', <span key="t" className="text-accent-700">{money(a.totalValue, a.currency)}</span>],
+              ['Fee', a.feeTotalInr ? `${money(a.feeTotalInr, 'INR')} · ${statusLabel(a.paymentStatus)}` : 'None'],
+            ]}
+          />
           {a.award && (
-            <Link href="/agreements" className="mt-5 flex items-center gap-2 rounded-xl bg-slate-50 p-3 text-sm font-semibold text-slate-700 hover:bg-slate-100">
-              <FileSignature className="size-4" /> Scholarship {a.award.awardNo} · <StatusBadge status={a.award.status} />
+            <Link href="/agreements" className="group mt-5 flex flex-wrap items-center justify-between gap-3 rounded-[4px] bg-ink px-4 py-3 text-paper">
+              <span className="eyebrow text-[0.66rem] text-paper/70">
+                Scholarship <span className="text-paper">{a.award.awardNo}</span>
+              </span>
+              <span className="flex items-center gap-3">
+                <StatusBadge status={a.award.status} />
+                <span className="arrow">→</span>
+              </span>
             </Link>
           )}
         </Card>
         <Card title="Timeline">
-          <ol className="relative space-y-5 border-l border-slate-200 pl-5">
+          <ol className="relative space-y-6 border-l-2 border-ink/15 pl-6">
             {a.history?.map((h) => (
               <li key={h.id} className="relative">
-                <span className="absolute -left-[26px] top-1 size-3 rounded-full bg-white ring-2 ring-brand-500" />
-                <p className="text-sm font-semibold text-slate-900">{statusLabel(h.toStatus)}</p>
+                <span className="absolute -left-[31px] top-1.5 size-2.5 bg-brand-600" aria-hidden />
+                <p className="eyebrow text-[0.62rem] text-slate-500">{dateTime(h.createdAt)}</p>
+                <p className="mt-1 font-semibold">{statusLabel(h.toStatus)}</p>
                 {h.note && <p className="text-sm text-slate-600">{h.note}</p>}
-                <p className="text-xs text-slate-400">{dateTime(h.createdAt)}</p>
               </li>
             ))}
           </ol>

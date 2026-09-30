@@ -1,7 +1,6 @@
 @import "tailwindcss";
 @import "../../../packages/web-shared/src/theme.css";
+@import "../../../packages/web-shared/src/programme.css";
 @source "../../../packages/web-shared/src";
 
-body {
-  @apply bg-slate-50 text-slate-800;
-}
+/* Athlete portal: the shared programme design at full volume (defaults in programme.css). */

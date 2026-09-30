@@ -27,6 +27,7 @@
     "./auth": "./src/auth.tsx",
     "./otp-login": "./src/otp-login.tsx",
     "./hooks": "./src/hooks.ts",
-    "./theme.css": "./src/theme.css"
+    "./theme.css": "./src/theme.css",
+    "./programme.css": "./src/programme.css"
   }
 }

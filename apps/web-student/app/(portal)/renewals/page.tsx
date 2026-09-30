@@ -1,7 +1,6 @@
 'use client';
 import Link from 'next/link';
 import { useState } from 'react';
-import { CalendarCheck2, CheckCircle2, Circle, RefreshCw } from 'lucide-react';
 import { apiPost, date, daysUntil, money } from '@aci/web-shared';
 import { mutate, useApi } from '@aci/web-shared/hooks';
 import { Alert, Button, Card, Checkbox, EmptyState, Field, Input, Modal, PageHeader, PageLoader, StatusBadge, useToast } from '@aci/web-shared/ui';
@@ -10,12 +9,20 @@ import type { AwardYear, Envelope } from '@/lib/types';
 
 function Step({ done, children }: { done: boolean; children: React.ReactNode }) {
   return (
-    <li className="flex items-start gap-2 text-sm">
-      {done ? <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-accent-600" /> : <Circle className="mt-0.5 size-4 shrink-0 text-slate-300" />}
-      <span className={done ? 'text-slate-500 line-through' : 'text-slate-800'}>{children}</span>
+    <li className="flex items-center gap-3 py-2.5">
+      <span className="tick" data-done={done || undefined} aria-hidden />
+      <span className={done ? 'text-slate-500 line-through decoration-2' : 'font-medium'}>{children}</span>
+      <span className="sr-only">{done ? '(done)' : '(to do)'}</span>
     </li>
   );
 }
+
+const HOW = [
+  ['1', '30 days before', 'We text and email you a reminder'],
+  ['2', 'Register', 'Confirm enrolment and the university policy'],
+  ['3', 'Sign', 'Sign the renewal of both agreements'],
+  ['!', 'If you don’t', 'Your scholarship is paused (suspended)'],
+];
 
 export default function RenewalsPage() {
   const toast = useToast();
@@ -49,27 +56,21 @@ export default function RenewalsPage() {
         title="Yearly renewals"
         subtitle="A scholarship does not renew itself. Every year you register and sign again online to keep receiving it — no signature, no scholarship that year."
       />
-      <div className="mb-8 grid gap-3 sm:grid-cols-4">
-        {[
-          ['1', '30 days before', 'We text and email you a reminder'],
-          ['2', 'Register', 'Confirm enrolment and the university policy'],
-          ['3', 'Sign', 'Sign the renewal of both agreements'],
-          ['!', 'If you don’t', 'Your scholarship is paused (suspended)'],
-        ].map(([n, t, d]) => (
-          <div key={t} className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
-            <span className={`flex size-7 items-center justify-center rounded-full text-xs font-bold ${n === '!' ? 'bg-red-100 text-red-700' : 'bg-brand-50 text-brand-700'}`}>{n}</span>
-            <p className="mt-3 text-sm font-semibold text-slate-900">{t}</p>
-            <p className="text-xs text-slate-500">{d}</p>
-          </div>
+
+      <ol className="track mb-10 grid grid-cols-1 overflow-hidden rounded-[6px] text-white sm:grid-cols-4" aria-label="How renewal works">
+        {HOW.map(([n, t, d], i) => (
+          <li key={t} className={`relative px-5 pb-5 pt-4 ${i > 0 ? 'border-t-[3px] border-white/85 sm:border-l-[3px] sm:border-t-0' : ''} ${n === '!' ? 'bg-ink/35' : ''}`}>
+            <span className="display text-5xl leading-none">{n}</span>
+            <p className="mt-3 font-bold">{t}</p>
+            <p className="text-sm text-white/85">{d}</p>
+          </li>
         ))}
-      </div>
+      </ol>
 
       {years.length === 0 ? (
-        <EmptyState icon={<RefreshCw className="size-8" />} title="No renewals yet">
-          Once your scholarship is active, each year’s renewal appears here.
-        </EmptyState>
+        <EmptyState title="No renewals yet">Once your scholarship is active, each year’s renewal appears here.</EmptyState>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-5">
           {years.map((y) => {
             const yearEnvs = envelopes.filter((e) => e.referenceId === y.id);
             const openEnvs = yearEnvs.filter((e) => ['SENT', 'VIEWED'].includes(e.status));
@@ -78,34 +79,37 @@ export default function RenewalsPage() {
             return (
               <Card key={y.id}>
                 <div className="flex flex-wrap items-start justify-between gap-4">
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">{y.award?.universityName}</p>
-                    <h3 className="text-lg font-bold text-slate-900">
-                      Year {y.yearNumber} · {y.academicYear}
-                    </h3>
-                    <p className="text-sm text-slate-500">
-                      Anniversary {date(y.dueDate)} · {money(y.amount, y.award?.currency ?? 'INR')} this year
-                      {actionable && ` · ${d >= 0 ? `due in ${d} days` : `${-d} days overdue`}`}
-                    </p>
+                  <div className="flex items-start gap-5">
+                    <span className="display text-[4.5rem] leading-[0.8] text-brand-600">{y.yearNumber}</span>
+                    <div>
+                      <p className="eyebrow text-[0.62rem] text-slate-500">{y.award?.universityName}</p>
+                      <h3 className="display mt-1 text-3xl">
+                        Year {y.yearNumber} · {y.academicYear}
+                      </h3>
+                      <p className="mt-1 text-sm text-slate-600">
+                        Anniversary {date(y.dueDate)} · {money(y.amount, y.award?.currency ?? 'INR')} this year
+                        {actionable && ` · ${d >= 0 ? `due in ${d} days` : `${-d} days overdue`}`}
+                      </p>
+                    </div>
                   </div>
                   <StatusBadge status={y.status} />
                 </div>
                 {actionable && (
                   <>
                     {y.status !== 'DUE' && (
-                      <Alert tone="error" className="mt-4">
+                      <Alert tone="error" className="mt-5">
                         Complete this renewal by {date(y.deadline)} or your scholarship will be (or stays) suspended.
                       </Alert>
                     )}
-                    <ol className="mt-4 space-y-2">
+                    <ol className="mt-4 divide-y divide-dashed divide-ink/15 border-y border-dashed border-ink/15">
                       <Step done={!!y.registrationSubmittedAt}>Annual registration (enrolment + policy confirmation)</Step>
                       <Step done={!!y.scholarshipSignedAt}>Sign the Scholarship Agreement renewal</Step>
                       <Step done={!!y.agencySignedAt}>Sign the Agency Agreement renewal</Step>
                     </ol>
-                    <div className="mt-5 flex flex-wrap gap-2">
+                    <div className="mt-5 flex flex-wrap gap-3">
                       {!y.registrationSubmittedAt && (
-                        <Button onClick={() => setOpen(y)} icon={<CalendarCheck2 className="size-4" />}>
-                          Register for Year {y.yearNumber}
+                        <Button onClick={() => setOpen(y)}>
+                          Register for Year {y.yearNumber} <span className="arrow">→</span>
                         </Button>
                       )}
                       {openEnvs.length > 0 && (
@@ -116,7 +120,7 @@ export default function RenewalsPage() {
                     </div>
                   </>
                 )}
-                {y.status === 'RENEWED' && <p className="mt-3 text-sm text-accent-700">Renewed on {date(y.renewedAt)}.</p>}
+                {y.status === 'RENEWED' && <p className="eyebrow mt-4 text-[0.66rem] text-accent-700">Renewed on {date(y.renewedAt)}</p>}
               </Card>
             );
           })}
@@ -137,7 +141,7 @@ export default function RenewalsPage() {
         }
       >
         <div className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <Field label="Course"><Input value={f.currentCourse} onChange={(e) => setF({ ...f, currentCourse: e.target.value })} placeholder="B.Tech" /></Field>
             <Field label="Semester / year"><Input value={f.currentSemester} onChange={(e) => setF({ ...f, currentSemester: e.target.value })} /></Field>
             <Field label="Last result"><Input value={f.academicScore} onChange={(e) => setF({ ...f, academicScore: e.target.value })} placeholder="7.8 CGPA" /></Field>

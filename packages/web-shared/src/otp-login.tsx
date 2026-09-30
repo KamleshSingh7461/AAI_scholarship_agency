@@ -94,7 +94,7 @@ export function OtpLogin({ audience, onSuccess, title, subtitle }: { audience: '
       <form onSubmit={request} className="space-y-5">
         {title && (
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900">{title}</h1>
+            <h1 data-ui="otp-title" className="text-2xl font-bold tracking-tight text-slate-900">{title}</h1>
             {subtitle && <p className="mt-1 text-sm text-slate-500">{subtitle}</p>}
           </div>
         )}
@@ -106,14 +106,16 @@ export function OtpLogin({ audience, onSuccess, title, subtitle }: { audience: '
           <div className="grid grid-cols-2 gap-2">
             {(
               [
-                ['WHATSAPP', 'WhatsApp', <MessageCircle key="w" className="size-4" />],
-                ['SMS', 'SMS', <Smartphone key="s" className="size-4" />],
+                ['WHATSAPP', 'WhatsApp', <MessageCircle key="w" data-ui="icon" className="size-4" />],
+                ['SMS', 'SMS', <Smartphone key="s" data-ui="icon" className="size-4" />],
               ] as const
             ).map(([v, label, icon]) => (
               <button
                 type="button"
                 key={v}
                 onClick={() => setChannel(v)}
+                data-ui="choice"
+                aria-pressed={channel === v}
                 className={clsx(
                   'flex h-11 items-center justify-center gap-2 rounded-lg text-sm font-semibold ring-1 ring-inset transition',
                   channel === v ? 'bg-brand-50 text-brand-700 ring-brand-500' : 'bg-white text-slate-600 ring-slate-300 hover:bg-slate-50',
@@ -137,7 +139,7 @@ export function OtpLogin({ audience, onSuccess, title, subtitle }: { audience: '
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900">Enter your code</h1>
+        <h1 data-ui="otp-title" className="text-2xl font-bold tracking-tight text-slate-900">Enter your code</h1>
         <p className="mt-1 text-sm text-slate-500">
           We sent a 6-digit code by {challenge.channel === 'WHATSAPP' ? 'WhatsApp' : 'SMS'} to <span className="font-semibold text-slate-800">{challenge.maskedPhone}</span>.
         </p>
@@ -155,6 +157,7 @@ export function OtpLogin({ audience, onSuccess, title, subtitle }: { audience: '
             inputMode="numeric"
             autoComplete={i === 0 ? 'one-time-code' : 'off'}
             maxLength={6}
+            data-ui="otp-digit"
             className="h-14 w-full rounded-xl border-0 text-center text-2xl font-bold text-slate-900 ring-1 ring-inset ring-slate-300 focus:ring-2 focus:ring-brand-500"
             aria-label={`Digit ${i + 1}`}
           />

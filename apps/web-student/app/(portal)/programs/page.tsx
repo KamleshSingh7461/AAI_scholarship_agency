@@ -1,11 +1,53 @@
 'use client';
 import Link from 'next/link';
 import { useState } from 'react';
-import { GraduationCap, Search, Users } from 'lucide-react';
 import { money } from '@aci/web-shared';
 import { useApi } from '@aci/web-shared/hooks';
-import { Badge, EmptyState, ErrorState, Input, PageHeader, PageLoader, Pagination, Select } from '@aci/web-shared/ui';
+import { EmptyState, ErrorState, Input, PageHeader, PageLoader, Pagination, Select } from '@aci/web-shared/ui';
+import { bibNumber, Pins, SeatsMeter } from '@/components/race';
 import type { CatalogProgram } from '@/lib/catalog';
+
+function ProgramBib({ p }: { p: CatalogProgram }) {
+  const [prefix, number] = bibNumber(p.code);
+  return (
+    <Link href={`/programs/${p.id}`} className="bib group" aria-label={`${p.name}, ${p.university?.name ?? ''}`}>
+      <Pins />
+      <div className="bib-band px-6 pb-3.5 pt-5">
+        <p className="display line-clamp-2 text-2xl">{p.university?.name}</p>
+        <p className="eyebrow mt-1 truncate text-[0.62rem] text-white/80">{[p.university?.city, p.university?.state].filter(Boolean).join(', ') || 'India'}</p>
+      </div>
+      <div className="px-6 pb-5 pt-4">
+        <div className="flex items-center justify-between gap-3">
+          <p className="eyebrow text-[0.62rem] text-slate-500">{prefix}</p>
+          <p className="eyebrow text-[0.62rem] text-slate-500">
+            {p.durationYears}-yr · {p.academicYear}
+          </p>
+        </div>
+        <p className="display mt-1 text-[5.5rem] leading-[0.82] tracking-tight transition-colors group-hover:text-brand-600">{number}</p>
+        <h3 className="mt-3 font-semibold leading-snug">{p.name}</h3>
+      </div>
+      <div className="bib-stub px-6 pb-6 pt-4">
+        <dl className="grid grid-cols-3 gap-3">
+          <div>
+            <dt className="eyebrow text-[0.6rem] text-slate-500">Per year</dt>
+            <dd className="mt-1 font-bold tabular-nums">{money(p.benefitsInr.annualValue, 'INR')}</dd>
+          </div>
+          <div>
+            <dt className="eyebrow text-[0.6rem] text-slate-500">Total</dt>
+            <dd className="mt-1 font-bold tabular-nums text-accent-700">{money(p.benefitsInr.totalValue, 'INR')}</dd>
+          </div>
+          <div>
+            <dt className="eyebrow text-[0.6rem] text-slate-500">Fee</dt>
+            <dd className="mt-1 font-bold tabular-nums">{p.fee.totalInr ? money(p.fee.totalInr, 'INR') : 'Free'}</dd>
+          </div>
+        </dl>
+        <div className="mt-4">
+          <SeatsMeter left={p.seatsLeft} total={p.seatsTotal} />
+        </div>
+      </div>
+    </Link>
+  );
+}
 
 export default function ProgramsPage() {
   const [q, setQ] = useState('');
@@ -24,57 +66,49 @@ export default function ProgramsPage() {
   return (
     <div>
       <PageHeader title="Scholarships" subtitle="Open athletic scholarships at partner universities. Values are shown in Indian Rupees." />
-      <div className="mb-6 grid gap-3 sm:grid-cols-[1fr_180px_140px]">
-        <label className="relative">
-          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
-          <Input className="pl-9" placeholder="Search university or program" value={q} onChange={(e) => (setQ(e.target.value), setPage(1))} />
+      <div className="mb-8 grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_11rem_9rem]">
+        <label>
+          <span className="sr-only">Search university or program</span>
+          <Input className="h-12" placeholder="Search university or program" value={q} onChange={(e) => (setQ(e.target.value), setPage(1))} />
         </label>
-        <Select value={sport} onChange={(e) => (setSport(e.target.value), setPage(1))}>
-          <option value="">All sports</option>
-          {stats?.sports.map((s) => <option key={s}>{s}</option>)}
-        </Select>
-        <Select value={duration} onChange={(e) => (setDuration(e.target.value), setPage(1))}>
-          <option value="">Any length</option>
-          <option value="4">4-year</option>
-          <option value="3">3-year</option>
-          <option value="2">2-year</option>
-        </Select>
+        <label>
+          <span className="sr-only">Sport</span>
+          <Select className="h-12" value={sport} onChange={(e) => (setSport(e.target.value), setPage(1))}>
+            <option value="">All sports</option>
+            {stats?.sports.map((s) => <option key={s}>{s}</option>)}
+          </Select>
+        </label>
+        <label>
+          <span className="sr-only">Length</span>
+          <Select className="h-12" value={duration} onChange={(e) => (setDuration(e.target.value), setPage(1))}>
+            <option value="">Any length</option>
+            <option value="4">4-year</option>
+            <option value="3">3-year</option>
+            <option value="2">2-year</option>
+          </Select>
+        </label>
       </div>
       {error ? (
         <ErrorState error={error} retry={() => mutate()} />
       ) : isLoading || !data ? (
         <PageLoader />
       ) : data.items.length === 0 ? (
-        <EmptyState icon={<GraduationCap className="size-8" />} title="No scholarships match your filters" />
+        <EmptyState title="No match">No scholarships match your filters. Try another sport or length.</EmptyState>
       ) : (
         <>
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <p className="eyebrow mb-5 text-slate-500">
+            {data.total} scholarship{data.total === 1 ? '' : 's'}
+          </p>
+          <div className="grid grid-cols-1 gap-x-7 gap-y-10 md:grid-cols-2 xl:grid-cols-3">
             {data.items.map((p) => (
-              <Link key={p.id} href={`/programs/${p.id}`} className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 transition hover:shadow-md hover:ring-brand-200">
-                <div className="flex items-start justify-between gap-2">
-                  <p className="text-sm font-semibold text-slate-900">{p.university?.name}</p>
-                  <Badge tone="green">{p.durationYears}-Year</Badge>
-                </div>
-                <h3 className="mt-3 font-bold text-slate-900">{p.name}</h3>
-                <div className="mt-4 flex items-end justify-between">
-                  <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Total value</p>
-                    <p className="text-xl font-bold text-accent-700">{money(p.benefitsInr.totalValue, 'INR')}</p>
-                    <p className="text-xs text-slate-500">{money(p.benefitsInr.annualValue, 'INR')} / year</p>
-                  </div>
-                  <p className="flex items-center gap-1 text-xs text-slate-500">
-                    <Users className="size-3.5" /> {p.seatsLeft} left
-                  </p>
-                </div>
-                <p className="mt-4 border-t border-slate-100 pt-3 text-xs text-slate-500">
-                  Application fee: <span className="font-semibold text-slate-800">{p.fee.totalInr ? money(p.fee.totalInr, 'INR') : 'Free'}</span>
-                </p>
-              </Link>
+              <ProgramBib key={p.id} p={p} />
             ))}
           </div>
-          <div className="mt-4 rounded-2xl bg-white ring-1 ring-slate-200">
-            <Pagination page={data.page} totalPages={data.totalPages} total={data.total} onPage={setPage} />
-          </div>
+          {data.totalPages > 1 && (
+            <div className="mt-10 border-t border-ink/15">
+              <Pagination page={data.page} totalPages={data.totalPages} total={data.total} onPage={setPage} />
+            </div>
+          )}
         </>
       )}
     </div>

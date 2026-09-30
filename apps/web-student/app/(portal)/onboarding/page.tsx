@@ -2,7 +2,6 @@
 import clsx from 'clsx';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { Check } from 'lucide-react';
 import { apiPost } from '@aci/web-shared';
 import { mutate, useApi } from '@aci/web-shared/hooks';
 import { Alert, Button, Card, PageLoader, useToast } from '@aci/web-shared/ui';
@@ -12,7 +11,7 @@ import type { MeResponse } from '@/lib/types';
 const STEPS = [
   { n: 1, title: 'Personal info', key: 'personal' },
   { n: 2, title: 'Academic info', key: 'academic' },
-  { n: 3, title: 'Sports metrix', key: 'sports' },
+  { n: 3, title: 'Sports metrics', key: 'sports' },
   { n: 4, title: 'Documents & references', key: 'documents' },
 ] as const;
 
@@ -33,6 +32,7 @@ export default function OnboardingPage() {
 
   if (!data) return <PageLoader />;
   const locked = !['DRAFT', 'CHANGES_REQUESTED'].includes(data.profile.status);
+  const doneCount = STEPS.filter((s) => data.completeness.steps[s.key]).length;
   const onSaved = (r: MeResponse) => {
     void setMe(r, { revalidate: false });
     if (step < 4) {
@@ -58,29 +58,26 @@ export default function OnboardingPage() {
 
   return (
     <div>
-      <div className="mb-8 text-center">
-        <h1 className="text-2xl font-black tracking-tight text-slate-900 underline decoration-brand-600 decoration-4 underline-offset-8">ATHLETE SIGN UP</h1>
-        <p className="mt-4 text-sm text-slate-500">Complete all four steps. Your progress is saved after each step.</p>
-      </div>
+      <header className="mb-8 border-b-2 border-ink pb-6">
+        <p className="eyebrow text-brand-600">
+          {doneCount} of 4 laps complete · progress saved after each step
+        </p>
+        <h1 className="display rise mt-3 text-[clamp(3rem,8vw,6rem)]">Athlete sign-up</h1>
+      </header>
 
-      <ol className="mb-8 grid grid-cols-4 gap-2">
+      <ol className="mb-10 grid grid-cols-4 gap-1.5" aria-label="Sign-up steps">
         {STEPS.map((s) => {
           const done = data.completeness.steps[s.key];
+          const current = step === s.n;
           return (
             <li key={s.n}>
-              <button onClick={() => setStep(s.n)} className="group w-full text-left">
-                <div className={clsx('h-1.5 rounded-full', step === s.n ? 'bg-brand-600' : done ? 'bg-accent-500' : 'bg-slate-200')} />
-                <div className="mt-2 flex items-center gap-2">
-                  <span
-                    className={clsx(
-                      'flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-bold',
-                      done ? 'bg-accent-500 text-white' : step === s.n ? 'bg-brand-600 text-white' : 'bg-slate-200 text-slate-600',
-                    )}
-                  >
-                    {done ? <Check className="size-3.5" /> : s.n}
-                  </span>
-                  <span className={clsx('hidden text-xs font-semibold sm:block', step === s.n ? 'text-slate-900' : 'text-slate-500')}>
-                    {s.title} (Step-{s.n})
+              <button onClick={() => setStep(s.n)} className="group w-full text-left" aria-current={current ? 'step' : undefined}>
+                <div className="split" data-state={current ? 'current' : done ? 'done' : undefined} />
+                <div className="mt-3 flex items-baseline gap-2">
+                  <span className={clsx('display text-3xl leading-none sm:text-4xl', current ? 'text-brand-600' : done ? 'text-ink' : 'text-slate-400')}>{s.n}</span>
+                  <span className="min-w-0">
+                    <span className={clsx('hidden text-sm font-semibold leading-tight sm:block', current ? 'text-ink' : 'text-slate-600 group-hover:text-ink')}>{s.title}</span>
+                    <span className="eyebrow block text-[0.58rem] text-slate-500">{done ? 'Done' : current ? 'Now' : 'To do'}</span>
                   </span>
                 </div>
               </button>
@@ -101,9 +98,13 @@ export default function OnboardingPage() {
       )}
 
       <Card>
-        <h2 className="mb-6 text-lg font-bold text-slate-900 underline decoration-slate-300 underline-offset-4">
-          {STEPS[step - 1].title} (Step-{step})
-        </h2>
+        <div className="mb-8 flex items-end gap-4 border-b border-dashed border-ink/20 pb-5">
+          <span className="display text-[4.5rem] leading-[0.8] text-brand-600">{step}</span>
+          <div>
+            <p className="eyebrow text-[0.62rem] text-slate-500">Step {step} of 4</p>
+            <h2 className="display mt-1 text-3xl sm:text-4xl">{STEPS[step - 1].title}</h2>
+          </div>
+        </div>
         {step === 1 && <PersonalStep profile={data.profile} onSaved={onSaved} locked={locked} />}
         {step === 2 && <AcademicStep profile={data.profile} onSaved={onSaved} locked={locked} />}
         {step === 3 && <SportsStep profile={data.profile} onSaved={onSaved} locked={locked} />}
@@ -112,18 +113,18 @@ export default function OnboardingPage() {
 
       <div className="mt-6 flex flex-wrap items-center justify-between gap-4">
         <Button variant="secondary" disabled={step === 1} onClick={() => setStep(step - 1)}>
-          Prev
+          ← Prev
         </Button>
         {step < 4 ? (
           <Button variant="secondary" onClick={() => setStep(step + 1)}>
-            Next
+            Next →
           </Button>
         ) : (
           !locked && (
             <div className="flex flex-col items-end gap-2">
-              {data.completeness.missing.length > 0 && <p className="text-xs text-slate-500">Still missing: {data.completeness.missing.join(' · ')}</p>}
+              {data.completeness.missing.length > 0 && <p className="max-w-md text-right text-xs text-slate-500">Still missing: {data.completeness.missing.join(' · ')}</p>}
               <Button size="lg" onClick={submit} loading={submitting} disabled={!data.completeness.canSubmit}>
-                Sign Up
+                Submit profile <span className="arrow">→</span>
               </Button>
             </div>
           )

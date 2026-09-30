@@ -1,6 +1,5 @@
 'use client';
 import clsx from 'clsx';
-import { CheckCircle2, Eye, Loader2, Upload } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { ACCEPTED_TYPES, openDocument, uploadFile } from '@aci/web-shared';
 import { useToast } from '@aci/web-shared/ui';
@@ -47,36 +46,38 @@ export function FileUpload({
     }
   };
 
+  const rejected = documentId && status === 'REJECTED';
   return (
     <div
       className={clsx(
-        'flex items-center gap-3 rounded-xl border px-4 py-3',
-        documentId ? 'border-emerald-200 bg-emerald-50/50' : required ? 'border-dashed border-slate-300 bg-white' : 'border-dashed border-slate-200 bg-white',
+        'relative flex items-center gap-4 overflow-hidden rounded-[4px] border px-4 py-3',
+        rejected ? 'border-brand-600 bg-[#f8e3df]' : documentId ? 'border-ink/15 bg-chalk' : 'border-dashed border-ink/30 bg-transparent',
       )}
     >
-      {documentId ? <CheckCircle2 className="size-5 shrink-0 text-emerald-600" /> : <Upload className="size-5 shrink-0 text-slate-400" />}
+      <span className={clsx('tick rounded-full', !(documentId && !rejected) && 'border-dashed')} data-done={(documentId && !rejected) || undefined} aria-hidden />
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-medium text-slate-800">
+        <p className="text-sm font-semibold">
           {label}
           {required && <span className="ml-0.5 text-brand-600">*</span>}
         </p>
-        <p className="text-xs text-slate-500">
+        <p className={clsx('text-xs', rejected ? 'font-semibold text-brand-700' : 'text-slate-500')}>
           {progress !== null ? `Uploading… ${progress}%` : documentId ? (status === 'REJECTED' ? 'Rejected by reviewer — please re-upload' : status === 'VERIFIED' ? 'Verified' : 'Uploaded') : hint ?? 'PDF or image, max 10 MB'}
         </p>
       </div>
       {documentId && (
-        <button type="button" onClick={() => openDocument(documentId)} className="rounded-lg p-2 text-slate-500 hover:bg-white" title="View">
-          <Eye className="size-4" />
+        <button type="button" onClick={() => openDocument(documentId)} className="eyebrow link-grow text-[0.62rem] text-ink">
+          View
         </button>
       )}
       <button
         type="button"
         disabled={disabled || progress !== null}
         onClick={() => input.current?.click()}
-        className="rounded-lg bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 ring-1 ring-slate-300 hover:bg-slate-50 disabled:opacity-50"
+        className="eyebrow min-w-[5.5rem] rounded-[4px] px-3 py-2 text-[0.62rem] font-semibold text-ink ring-1 ring-inset ring-ink transition-colors hover:bg-ink hover:text-paper disabled:opacity-50"
       >
-        {progress !== null ? <Loader2 className="size-4 animate-spin" /> : documentId ? 'Replace' : 'Upload'}
+        {progress !== null ? `${progress}%` : documentId ? 'Replace' : 'Upload'}
       </button>
+      {progress !== null && <span className="absolute inset-x-0 bottom-0 h-[3px] bg-brand-600 transition-[width]" style={{ width: `${progress}%` }} aria-hidden />}
       <input ref={input} type="file" accept={ACCEPTED_TYPES} className="hidden" onChange={(e) => onFile(e.target.files?.[0])} />
     </div>
   );

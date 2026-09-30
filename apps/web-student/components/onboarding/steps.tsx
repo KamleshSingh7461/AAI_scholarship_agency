@@ -1,6 +1,5 @@
 'use client';
 import { useState, type FormEvent, type ReactNode } from 'react';
-import { ShieldCheck } from 'lucide-react';
 import { apiPut } from '@aci/web-shared';
 import { Alert, Button, Checkbox, Field, Input, Select, Textarea, useToast } from '@aci/web-shared/ui';
 import { FileUpload } from '@/components/file-upload';
@@ -19,9 +18,18 @@ type Save = (r: MeResponse) => void;
 export function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
     <fieldset className="space-y-4">
-      <legend className="mb-2 border-b-2 border-brand-100 pb-1 text-sm font-bold uppercase tracking-wide text-brand-700">{title}</legend>
+      <legend className="eyebrow mb-2 w-full border-b-2 border-ink pb-2 text-brand-600">{title}</legend>
       {children}
     </fieldset>
+  );
+}
+
+function MedalLabel({ color, children }: { color: string; children: ReactNode }) {
+  return (
+    <span className="inline-flex items-center gap-2">
+      <span className="size-3 rounded-full shadow-[inset_0_-2px_0_rgb(0_0_0/0.2)]" style={{ background: color }} aria-hidden />
+      {children}
+    </span>
   );
 }
 
@@ -112,8 +120,9 @@ export function PersonalStep({ profile, onSaved, locked }: { profile: AthletePro
       <Section title="Contact information">
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Mobile number">
-            <div className="flex h-10 items-center gap-2 rounded-lg bg-emerald-50 px-3 text-sm font-medium text-emerald-800 ring-1 ring-emerald-200">
-              <ShieldCheck className="size-4" /> {profile.phone} · verified by OTP
+            <div className="flex h-10 items-center justify-between gap-2 rounded-[4px] bg-paper-2 px-3 text-sm font-semibold">
+              {profile.phone}
+              <span className="eyebrow rounded-[3px] bg-accent-600 px-1.5 py-0.5 text-[0.58rem] text-white">Verified by OTP</span>
             </div>
           </Field>
           <Field label="WhatsApp number" hint="Where we send reminders and renewal notices"><Input value={f.whatsappNumber} onChange={set('whatsappNumber')} disabled={locked} /></Field>
@@ -361,9 +370,9 @@ export function SportsStep({ profile, onSaved, locked }: { profile: AthleteProfi
           <div>
             <p className="mb-2 text-sm font-medium text-slate-700">Medal inventory till date</p>
             <div className="grid grid-cols-3 gap-4">
-              <Field label="🥇 Gold"><Input type="number" min={0} value={f.medalsGold ?? 0} onChange={num('medalsGold')} disabled={locked} /></Field>
-              <Field label="🥈 Silver"><Input type="number" min={0} value={f.medalsSilver ?? 0} onChange={num('medalsSilver')} disabled={locked} /></Field>
-              <Field label="🥉 Bronze"><Input type="number" min={0} value={f.medalsBronze ?? 0} onChange={num('medalsBronze')} disabled={locked} /></Field>
+              <Field label={<MedalLabel color="#c9a227">Gold</MedalLabel>}><Input type="number" min={0} value={f.medalsGold ?? 0} onChange={num('medalsGold')} disabled={locked} /></Field>
+              <Field label={<MedalLabel color="#a7a9ac">Silver</MedalLabel>}><Input type="number" min={0} value={f.medalsSilver ?? 0} onChange={num('medalsSilver')} disabled={locked} /></Field>
+              <Field label={<MedalLabel color="#b07142">Bronze</MedalLabel>}><Input type="number" min={0} value={f.medalsBronze ?? 0} onChange={num('medalsBronze')} disabled={locked} /></Field>
             </div>
           </div>
           <Checkbox label="I have participated internationally" checked={!!f.internationalParticipation} onChange={(e) => setF({ ...f, internationalParticipation: e.target.checked })} disabled={locked} />

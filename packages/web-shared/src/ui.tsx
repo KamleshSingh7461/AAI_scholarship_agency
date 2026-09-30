@@ -46,6 +46,8 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
   return (
     <button
       ref={ref}
+      data-ui="button"
+      data-variant={variant}
       className={clsx(
         'inline-flex items-center justify-center gap-2 rounded-lg font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed',
         variants[variant],
@@ -56,7 +58,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       disabled={disabled || loading}
       {...rest}
     >
-      {loading ? <Loader2 className="size-4 animate-spin" /> : icon}
+      {loading ? <Loader2 data-ui="spinner" className="size-4 animate-spin" /> : icon}
       {children}
     </button>
   );
@@ -67,16 +69,16 @@ const inputBase =
   'block w-full rounded-lg border-0 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-brand-500 disabled:bg-slate-50 disabled:text-slate-500';
 
 export const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement> & { invalid?: boolean }>(function Input({ className, invalid, ...rest }, ref) {
-  return <input ref={ref} className={clsx(inputBase, 'h-10', invalid && 'ring-red-500', className)} {...rest} />;
+  return <input ref={ref} data-ui="input" aria-invalid={invalid || undefined} className={clsx(inputBase, 'h-10', invalid && 'ring-red-500', className)} {...rest} />;
 });
 
 export const Textarea = forwardRef<HTMLTextAreaElement, TextareaHTMLAttributes<HTMLTextAreaElement>>(function Textarea({ className, ...rest }, ref) {
-  return <textarea ref={ref} className={clsx(inputBase, 'min-h-[96px]', className)} {...rest} />;
+  return <textarea ref={ref} data-ui="input" className={clsx(inputBase, 'min-h-[96px]', className)} {...rest} />;
 });
 
 export const Select = forwardRef<HTMLSelectElement, SelectHTMLAttributes<HTMLSelectElement>>(function Select({ className, children, ...rest }, ref) {
   return (
-    <select ref={ref} className={clsx(inputBase, 'h-10 pr-8', className)} {...rest}>
+    <select ref={ref} data-ui="input" className={clsx(inputBase, 'h-10 pr-8', className)} {...rest}>
       {children}
     </select>
   );
@@ -84,7 +86,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectHTMLAttributes<HTMLSel
 
 export function Checkbox({ label, className, ...rest }: InputHTMLAttributes<HTMLInputElement> & { label: ReactNode }) {
   return (
-    <label className={clsx('flex cursor-pointer items-start gap-3 text-sm text-slate-700', className)}>
+    <label data-ui="checkbox" className={clsx('flex cursor-pointer items-start gap-3 text-sm text-slate-700', className)}>
       <input type="checkbox" className="mt-0.5 size-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500" {...rest} />
       <span>{label}</span>
     </label>
@@ -95,7 +97,7 @@ export function Field({ label, hint, error, required, children, className }: { l
   return (
     <div className={clsx('space-y-1.5', className)}>
       {label && (
-        <label className="block text-sm font-medium text-slate-700">
+        <label data-ui="field-label" className="block text-sm font-medium text-slate-700">
           {label}
           {required && <span className="ml-0.5 text-brand-600">*</span>}
         </label>
@@ -109,11 +111,11 @@ export function Field({ label, hint, error, required, children, className }: { l
 // ---------------------------------------------------------------------------------------- Layout bits
 export function Card({ title, subtitle, actions, children, className, padded = true }: { title?: ReactNode; subtitle?: ReactNode; actions?: ReactNode; children?: ReactNode; className?: string; padded?: boolean }) {
   return (
-    <section className={clsx('rounded-2xl bg-white shadow-sm ring-1 ring-slate-200/80', className)}>
+    <section data-ui="card" className={clsx('rounded-2xl bg-white shadow-sm ring-1 ring-slate-200/80', className)}>
       {(title || actions) && (
-        <header className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-100 px-5 py-4">
+        <header data-ui="card-header" className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-100 px-5 py-4">
           <div>
-            {title && <h3 className="text-sm font-semibold text-slate-900">{title}</h3>}
+            {title && <h3 data-ui="card-title" className="text-sm font-semibold text-slate-900">{title}</h3>}
             {subtitle && <p className="mt-0.5 text-xs text-slate-500">{subtitle}</p>}
           </div>
           {actions && <div className="flex items-center gap-2">{actions}</div>}
@@ -126,11 +128,11 @@ export function Card({ title, subtitle, actions, children, className, padded = t
 
 export function PageHeader({ title, subtitle, actions, breadcrumb }: { title: ReactNode; subtitle?: ReactNode; actions?: ReactNode; breadcrumb?: ReactNode }) {
   return (
-    <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+    <div data-ui="page-header" className="mb-6 flex flex-wrap items-end justify-between gap-4">
       <div>
-        {breadcrumb && <div className="mb-1 text-xs text-slate-500">{breadcrumb}</div>}
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900">{title}</h1>
-        {subtitle && <p className="mt-1 max-w-3xl text-sm text-slate-500">{subtitle}</p>}
+        {breadcrumb && <div data-ui="breadcrumb" className="mb-1 text-xs text-slate-500">{breadcrumb}</div>}
+        <h1 data-ui="page-title" className="text-2xl font-bold tracking-tight text-slate-900">{title}</h1>
+        {subtitle && <p data-ui="page-subtitle" className="mt-1 max-w-3xl text-sm text-slate-500">{subtitle}</p>}
       </div>
       {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
     </div>
@@ -148,7 +150,7 @@ const tones: Record<Tone, string> = {
 
 export function Badge({ tone = 'gray', children, dot, className }: { tone?: Tone; children: ReactNode; dot?: boolean; className?: string }) {
   return (
-    <span className={clsx('inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset', tones[tone], className)}>
+    <span data-ui="badge" data-tone={tone} className={clsx('inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset', tones[tone], className)}>
       {dot && <span className="size-1.5 rounded-full bg-current" />}
       {children}
     </span>
@@ -165,12 +167,14 @@ export function StatusBadge({ status, label }: { status: string | null | undefin
 
 export function Stat({ label, value, sub, tone, icon }: { label: ReactNode; value: ReactNode; sub?: ReactNode; tone?: 'default' | 'green' | 'red' | 'amber'; icon?: ReactNode }) {
   return (
-    <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200/80">
+    <div data-ui="stat" className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200/80">
       <div className="flex items-center justify-between">
-        <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">{label}</p>
+        <p data-ui="stat-label" className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">{label}</p>
         {icon && <span className="text-slate-400">{icon}</span>}
       </div>
       <p
+        data-ui="stat-value"
+        data-tone={tone ?? 'default'}
         className={clsx(
           'mt-2 text-2xl font-bold tabular-nums tracking-tight',
           tone === 'green' ? 'text-accent-700' : tone === 'red' ? 'text-red-600' : tone === 'amber' ? 'text-amber-600' : 'text-slate-900',
@@ -178,18 +182,18 @@ export function Stat({ label, value, sub, tone, icon }: { label: ReactNode; valu
       >
         {value}
       </p>
-      {sub && <p className="mt-1 text-xs text-slate-500">{sub}</p>}
+      {sub && <p data-ui="stat-sub" className="mt-1 text-xs text-slate-500">{sub}</p>}
     </div>
   );
 }
 
 export function Spinner({ className }: { className?: string }) {
-  return <Loader2 className={clsx('size-5 animate-spin text-slate-400', className)} />;
+  return <Loader2 data-ui="spinner" className={clsx('size-5 animate-spin text-slate-400', className)} />;
 }
 
 export function PageLoader({ label = 'Loading…' }: { label?: string }) {
   return (
-    <div className="flex min-h-[40vh] flex-col items-center justify-center gap-3 text-sm text-slate-500">
+    <div data-ui="page-loader" className="flex min-h-[40vh] flex-col items-center justify-center gap-3 text-sm text-slate-500">
       <Spinner className="size-7" />
       {label}
     </div>
@@ -198,9 +202,9 @@ export function PageLoader({ label = 'Loading…' }: { label?: string }) {
 
 export function EmptyState({ icon, title, children, action }: { icon?: ReactNode; title: ReactNode; children?: ReactNode; action?: ReactNode }) {
   return (
-    <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-12 text-center">
+    <div data-ui="empty" className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-12 text-center">
       {icon && <div className="mb-3 text-slate-400">{icon}</div>}
-      <h3 className="text-sm font-semibold text-slate-900">{title}</h3>
+      <h3 data-ui="empty-title" className="text-sm font-semibold text-slate-900">{title}</h3>
       {children && <p className="mt-1 max-w-md text-sm text-slate-500">{children}</p>}
       {action && <div className="mt-5">{action}</div>}
     </div>
@@ -209,17 +213,17 @@ export function EmptyState({ icon, title, children, action }: { icon?: ReactNode
 
 export function Alert({ tone = 'info', title, children, className }: { tone?: 'info' | 'success' | 'warning' | 'error'; title?: ReactNode; children?: ReactNode; className?: string }) {
   const map = {
-    info: ['bg-sky-50 text-sky-800 ring-sky-200', <Info key="i" className="size-5 shrink-0" />],
-    success: ['bg-emerald-50 text-emerald-800 ring-emerald-200', <CheckCircle2 key="s" className="size-5 shrink-0" />],
-    warning: ['bg-amber-50 text-amber-900 ring-amber-200', <AlertTriangle key="w" className="size-5 shrink-0" />],
-    error: ['bg-red-50 text-red-800 ring-red-200', <XCircle key="e" className="size-5 shrink-0" />],
+    info: ['bg-sky-50 text-sky-800 ring-sky-200', <Info key="i" data-ui="icon" className="size-5 shrink-0" />],
+    success: ['bg-emerald-50 text-emerald-800 ring-emerald-200', <CheckCircle2 key="s" data-ui="icon" className="size-5 shrink-0" />],
+    warning: ['bg-amber-50 text-amber-900 ring-amber-200', <AlertTriangle key="w" data-ui="icon" className="size-5 shrink-0" />],
+    error: ['bg-red-50 text-red-800 ring-red-200', <XCircle key="e" data-ui="icon" className="size-5 shrink-0" />],
   } as const;
   const [cls, icon] = map[tone];
   return (
-    <div className={clsx('flex gap-3 rounded-xl p-4 text-sm ring-1 ring-inset', cls, className)}>
+    <div data-ui="alert" data-tone={tone} role={tone === 'error' ? 'alert' : undefined} className={clsx('flex gap-3 rounded-xl p-4 text-sm ring-1 ring-inset', cls, className)}>
       {icon}
       <div className="space-y-1">
-        {title && <p className="font-semibold">{title}</p>}
+        {title && <p data-ui="alert-title" className="font-semibold">{title}</p>}
         {children && <div className="opacity-90">{children}</div>}
       </div>
     </div>
@@ -242,6 +246,7 @@ export function ErrorState({ error, retry }: { error: unknown; retry?: () => voi
 export function Avatar({ name, size = 36 }: { name?: string | null; size?: number }) {
   return (
     <span
+      data-ui="avatar"
       className="inline-flex shrink-0 items-center justify-center rounded-full bg-brand-50 font-semibold text-brand-700 ring-1 ring-brand-100"
       style={{ width: size, height: size, fontSize: size * 0.36 }}
     >
@@ -253,8 +258,8 @@ export function Avatar({ name, size = 36 }: { name?: string | null; size?: numbe
 export function Progress({ value, max = 100, className }: { value: number; max?: number; className?: string }) {
   const pctVal = Math.max(0, Math.min(100, (value / (max || 1)) * 100));
   return (
-    <div className={clsx('h-2 w-full overflow-hidden rounded-full bg-slate-100', className)}>
-      <div className="h-full rounded-full bg-accent-500 transition-all" style={{ width: `${pctVal}%` }} />
+    <div data-ui="progress" className={clsx('h-2 w-full overflow-hidden rounded-full bg-slate-100', className)}>
+      <div data-ui="progress-bar" className="h-full rounded-full bg-accent-500 transition-all" style={{ width: `${pctVal}%` }} />
     </div>
   );
 }
@@ -263,12 +268,12 @@ export function Progress({ value, max = 100, className }: { value: number; max?:
 export function Table({ children, className }: { children: ReactNode; className?: string }) {
   return (
     <div className={clsx('overflow-x-auto', className)}>
-      <table className="min-w-full divide-y divide-slate-200 text-sm">{children}</table>
+      <table data-ui="table" className="min-w-full divide-y divide-slate-200 text-sm">{children}</table>
     </div>
   );
 }
 export const Th = ({ children, className }: { children?: ReactNode; className?: string }) => (
-  <th className={clsx('whitespace-nowrap px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500', className)}>{children}</th>
+  <th data-ui="th" className={clsx('whitespace-nowrap px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500', className)}>{children}</th>
 );
 export const Td = ({ children, className, colSpan }: { children?: ReactNode; className?: string; colSpan?: number }) => (
   <td colSpan={colSpan} className={clsx('px-4 py-3 align-middle text-slate-700', className)}>
@@ -279,7 +284,7 @@ export const Td = ({ children, className, colSpan }: { children?: ReactNode; cla
 export function Pagination({ page, totalPages, total, onPage }: { page: number; totalPages: number; total: number; onPage: (p: number) => void }) {
   if (totalPages <= 1) return <p className="px-4 py-3 text-xs text-slate-500">{total} result{total === 1 ? '' : 's'}</p>;
   return (
-    <div className="flex items-center justify-between border-t border-slate-100 px-4 py-3 text-xs text-slate-500">
+    <div data-ui="pagination" className="flex items-center justify-between border-t border-slate-100 px-4 py-3 text-xs text-slate-500">
       <span>
         Page {page} of {totalPages} · {total} results
       </span>
@@ -298,11 +303,13 @@ export function Pagination({ page, totalPages, total, onPage }: { page: number; 
 // ---------------------------------------------------------------------------------------- Tabs
 export function Tabs<T extends string>({ tabs, value, onChange }: { tabs: { value: T; label: ReactNode; count?: number }[]; value: T; onChange: (v: T) => void }) {
   return (
-    <div className="flex flex-wrap gap-1 rounded-xl bg-slate-100 p-1">
+    <div data-ui="tabs" className="flex flex-wrap gap-1 rounded-xl bg-slate-100 p-1">
       {tabs.map((t) => (
         <button
           key={t.value}
           onClick={() => onChange(t.value)}
+          data-ui="tab"
+          data-active={value === t.value || undefined}
           className={clsx(
             'flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition',
             value === t.value ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900',
@@ -327,16 +334,16 @@ export function Modal({ open, onClose, title, children, footer, size = 'md' }: {
   if (!open) return null;
   const w = { sm: 'max-w-md', md: 'max-w-lg', lg: 'max-w-2xl', xl: 'max-w-4xl' }[size];
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/40 p-0 backdrop-blur-sm sm:items-center sm:p-4" onMouseDown={onClose}>
-      <div className={clsx('max-h-[92vh] w-full overflow-y-auto rounded-t-2xl bg-white shadow-xl sm:rounded-2xl', w)} onMouseDown={(e) => e.stopPropagation()} role="dialog" aria-modal>
+    <div data-ui="modal-overlay" className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/40 p-0 backdrop-blur-sm sm:items-center sm:p-4" onMouseDown={onClose}>
+      <div data-ui="modal" className={clsx('max-h-[92vh] w-full overflow-y-auto rounded-t-2xl bg-white shadow-xl sm:rounded-2xl', w)} onMouseDown={(e) => e.stopPropagation()} role="dialog" aria-modal>
         <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-100 bg-white px-5 py-4">
-          <h2 className="text-base font-semibold text-slate-900">{title}</h2>
+          <h2 data-ui="modal-title" className="text-base font-semibold text-slate-900">{title}</h2>
           <button onClick={onClose} className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600" aria-label="Close">
             <X className="size-5" />
           </button>
         </div>
         <div className="px-5 py-5">{children}</div>
-        {footer && <div className="sticky bottom-0 flex justify-end gap-2 border-t border-slate-100 bg-slate-50 px-5 py-3">{footer}</div>}
+        {footer && <div data-ui="modal-footer" className="sticky bottom-0 flex justify-end gap-2 border-t border-slate-100 bg-slate-50 px-5 py-3">{footer}</div>}
       </div>
     </div>
   );
@@ -364,12 +371,15 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         {items.map((t) => (
           <div
             key={t.id}
+            data-ui="toast"
+            data-tone={t.tone}
+            role={t.tone === 'error' ? 'alert' : 'status'}
             className={clsx(
               'pointer-events-auto flex max-w-sm items-start gap-2 rounded-xl px-4 py-3 text-sm font-medium text-white shadow-lg',
               t.tone === 'success' ? 'bg-emerald-600' : t.tone === 'error' ? 'bg-red-600' : 'bg-slate-800',
             )}
           >
-            {t.tone === 'success' ? <CheckCircle2 className="size-5 shrink-0" /> : t.tone === 'error' ? <XCircle className="size-5 shrink-0" /> : <Info className="size-5 shrink-0" />}
+            {t.tone === 'success' ? <CheckCircle2 data-ui="icon" className="size-5 shrink-0" /> : t.tone === 'error' ? <XCircle data-ui="icon" className="size-5 shrink-0" /> : <Info data-ui="icon" className="size-5 shrink-0" />}
             <span>{t.message}</span>
           </div>
         ))}
