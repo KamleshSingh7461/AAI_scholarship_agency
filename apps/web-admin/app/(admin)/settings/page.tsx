@@ -1,6 +1,5 @@
 'use client';
 import { useState } from 'react';
-import { Plus } from 'lucide-react';
 import { AGREEMENT_LABEL, apiPatch, apiPost, api, dateTime, relative, statusLabel } from '@aci/web-shared';
 import { useAuth } from '@aci/web-shared/auth';
 import { useApi } from '@aci/web-shared/hooks';
@@ -84,7 +83,7 @@ function UsersTab() {
             <option value="">All roles</option>
             {Object.keys(ROLE_HELP).map((r) => <option key={r} value={r}>{statusLabel(r)}</option>)}
           </Select>
-          <Button size="sm" icon={<Plus className="size-4" />} onClick={() => setForm({ phone: '', fullName: '', email: '', role: 'REVIEWER', universityId: '' })}>Add staff</Button>
+          <Button size="sm" onClick={() => setForm({ phone: '', fullName: '', email: '', role: 'REVIEWER', universityId: '' })}>Add staff</Button>
         </>
       }
       padded={false}
@@ -137,7 +136,7 @@ function UsersTab() {
         }
       >
         {form && (
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Field label="Mobile number" required hint="They log in with an OTP to this number"><Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} disabled={!!form.id} /></Field>
             <Field label="Full name" required><Input value={form.fullName} onChange={(e) => setForm({ ...form, fullName: e.target.value })} /></Field>
             <Field label="Email"><Input value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></Field>
@@ -343,7 +342,7 @@ function SystemTab() {
     }
   };
   return (
-    <div className="grid gap-6 lg:grid-cols-2">
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
       <Card title="USD → INR exchange rate" subtitle="Each scholarship snapshots the rate on the day it is granted; changing it never restates history.">
         {fx ? (
           <>

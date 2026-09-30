@@ -1,7 +1,6 @@
 'use client';
 import clsx from 'clsx';
 import { useState } from 'react';
-import { Info } from 'lucide-react';
 import { useApi } from '@aci/web-shared/hooks';
 import { Card, PageHeader, PageLoader, Select, Stat, Table, Td, Th } from '@aci/web-shared/ui';
 import { MoneyPair, useDisplayCurrency } from '@/components/money';
@@ -47,7 +46,7 @@ export default function FinancePage() {
           </Select>
         }
       />
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <Stat label="Total counted so far" value={<MoneyPair value={data.totals.counted} compact />} sub="Every student, added up, the day each one signed" tone="green" />
         <Stat label={`Paid out — ${data.fiscalYear}`} value={<MoneyPair value={data.totals.paidOutFy} compact />} sub="Scholarship value delivered this financial year" />
         <Stat label="Still to be paid" value={<MoneyPair value={data.totals.stillToPay} compact />} sub="Owed in future years, not yet delivered" tone="amber" />
@@ -65,7 +64,7 @@ export default function FinancePage() {
         {data.fySchedule.length === 0 ? (
           <p className="text-sm text-slate-500">No scholarships booked yet.</p>
         ) : (
-          <div className="grid gap-6 lg:grid-cols-[1fr_260px]">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_260px]">
             <div className="flex h-56 items-end gap-3">
               {data.fySchedule.map((r) => (
                 <button key={r.fiscalYear} className="group flex flex-1 flex-col items-center gap-2" onClick={() => setSelected(r.fiscalYear)}>
@@ -117,9 +116,9 @@ export default function FinancePage() {
         </Table>
       </Card>
 
-      <div className="grid gap-6 xl:grid-cols-2">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
         <Card title="Our agency commission" subtitle="Every signed Agency Agreement makes us the athlete's representative, earning a commission on the scholarship value, split with the university per its partnership agreement">
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <div><p className="text-xs font-semibold uppercase text-slate-500">Total commission</p><p className="text-lg font-bold"><MoneyPair value={data.commission.gross} compact /></p></div>
             <div><p className="text-xs font-semibold uppercase text-slate-500">Our share</p><p className="text-lg font-bold text-accent-700"><MoneyPair value={data.commission.companyNet} compact /></p></div>
             <div><p className="text-xs font-semibold uppercase text-slate-500">University share</p><p className="text-lg font-bold"><MoneyPair value={data.commission.universityShare} compact /></p></div>
@@ -127,7 +126,7 @@ export default function FinancePage() {
           <p className="mt-4 text-xs text-slate-500">Agency agreements signed: {totalAgreements}</p>
         </Card>
         <Card title="Audit — value confirmed by university" subtitle="Every amount we book should be backed by the university's own confirmation, not just our paperwork">
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <div><p className="text-xs font-semibold uppercase text-slate-500">Confirmed</p><p className="text-lg font-bold text-accent-700"><MoneyPair value={data.confirmation.confirmed} compact /></p></div>
             <div><p className="text-xs font-semibold uppercase text-slate-500">Awaiting</p><p className="text-lg font-bold text-amber-600"><MoneyPair value={data.confirmation.awaiting} compact /></p></div>
             <div><p className="text-xs font-semibold uppercase text-slate-500">% confirmed</p><p className="text-lg font-bold">{data.confirmation.confirmedPct}%</p></div>
@@ -163,13 +162,12 @@ export default function FinancePage() {
         </Table>
       </Card>
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <Stat label="Cash disbursed (all time)" value={<MoneyPair value={data.totals.cashDisbursed} compact />} sub="Company-funded benefits actually paid" />
         <Stat label="Application fees collected" value={<MoneyPair value={data.totals.applicationFeesCollected} compact />} sub="Net of refunds, incl. GST" />
         <Stat label="FX rate in use" value={`₹${(data.fx.rate4 / 10000).toFixed(2)} / $`} sub={data.fx.source === 'DEFAULT' ? 'Default — set the rate in Settings' : `Set ${data.fx.effectiveDate?.slice(0, 10)}`} />
       </div>
       <p className="flex items-start gap-2 text-xs text-slate-500">
-        <Info className="mt-0.5 size-4 shrink-0" />
         Each scholarship keeps the USD/INR rate from the day it was granted, so historical totals never change when the rate is updated. The revenue-recognition policy (book in
         full at grant vs. year by year) is configurable and should be confirmed with the statutory auditor.
       </p>

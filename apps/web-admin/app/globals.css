@@ -1,7 +1,53 @@
 @import "tailwindcss";
 @import "../../../packages/web-shared/src/theme.css";
+@import "../../../packages/web-shared/src/programme.css";
 @source "../../../packages/web-shared/src";
 
-body {
-  @apply bg-slate-50 text-slate-800;
+/*
+ * Staff & university portal: the shared programme design at working density — smaller page titles and
+ * light stat cards, so tables and queues stay the focus.
+ */
+:root {
+  --ui-page-title-size: clamp(2rem, 3.2vw, 2.75rem);
+  --ui-page-header-gap: 1.5rem;
+  --ui-page-header-pad: 1rem;
+}
+
+[data-ui='page-subtitle'] {
+  margin-top: 0.6rem;
+  font-size: 0.9rem;
+}
+
+[data-ui='stat'] {
+  background: var(--color-chalk);
+  box-shadow: 0 0 0 1px rgb(18 17 16 / 0.08), 0 14px 28px -24px rgb(18 17 16 / 0.45);
+}
+[data-ui='stat-label'] {
+  color: var(--color-slate-500);
+}
+[data-ui='stat-value'] {
+  margin-top: 0.6rem;
+  font-size: 2.25rem;
+  color: var(--color-ink);
+}
+[data-ui='stat-value'][data-tone='green'] {
+  color: var(--color-accent-700);
+}
+[data-ui='stat-value'][data-tone='amber'] {
+  color: #b45309;
+}
+[data-ui='stat-value'][data-tone='red'] {
+  color: var(--color-brand-600);
+}
+[data-ui='stat-sub'] {
+  color: var(--color-slate-500);
+}
+
+/* Tables are the main working surface here: tighter rows, paper hover. */
+[data-ui='table'] tbody tr:hover {
+  background: var(--color-paper);
+}
+
+[data-ui='modal-title'] {
+  font-size: 1.6rem;
 }

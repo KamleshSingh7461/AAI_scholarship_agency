@@ -1,7 +1,6 @@
 'use client';
 import Link from 'next/link';
 import { useState } from 'react';
-import { Search, UserRoundSearch } from 'lucide-react';
 import { date, statusLabel } from '@aci/web-shared';
 import { useApi } from '@aci/web-shared/hooks';
 import { Avatar, Card, EmptyState, Input, PageHeader, PageLoader, Pagination, Stat, StatusBadge, Table, Tabs, Td, Th } from '@aci/web-shared/ui';
@@ -33,7 +32,7 @@ export default function AthletesPage() {
   return (
     <div>
       <PageHeader title="Athlete profiles" breadcrumb="Home / Athletes" subtitle="Verify documents and approve profiles. Only verified athletes can be forwarded to universities." />
-      <div className="mb-6 grid gap-4 sm:grid-cols-4">
+      <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-4">
         {['SUBMITTED', 'VERIFIED', 'CHANGES_REQUESTED', 'DRAFT'].map((s) => (
           <Stat key={s} label={statusLabel(s)} value={stats?.byStatus[s] ?? 0} />
         ))}
@@ -41,8 +40,7 @@ export default function AthletesPage() {
       <Card padded={false}>
         <div className="space-y-3 border-b border-slate-100 p-4">
           <label className="relative block max-w-md">
-            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
-            <Input className="pl-9" placeholder="Name, athlete ID, phone, email" value={q} onChange={(e) => (setQ(e.target.value), setPage(1))} />
+            <Input placeholder="Name, athlete ID, phone, email" value={q} onChange={(e) => (setQ(e.target.value), setPage(1))} />
           </label>
           <Tabs
             tabs={['SUBMITTED', 'VERIFIED', 'CHANGES_REQUESTED', 'REJECTED', 'DRAFT'].map((s) => ({ value: s, label: statusLabel(s), count: stats?.byStatus[s] ?? 0 }))}
@@ -53,7 +51,7 @@ export default function AthletesPage() {
         {!data ? (
           <PageLoader />
         ) : data.items.length === 0 ? (
-          <div className="p-6"><EmptyState icon={<UserRoundSearch className="size-8" />} title="No athletes here" /></div>
+          <div className="p-6"><EmptyState title="No athletes here" /></div>
         ) : (
           <>
             <Table>

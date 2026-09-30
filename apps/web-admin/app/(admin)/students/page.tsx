@@ -1,7 +1,6 @@
 'use client';
 import Link from 'next/link';
 import { Fragment, useState } from 'react';
-import { ChevronDown, ChevronRight, Plus, Search, Trophy } from 'lucide-react';
 import { date, money } from '@aci/web-shared';
 import { useAuth } from '@aci/web-shared/auth';
 import { useApi } from '@aci/web-shared/hooks';
@@ -33,7 +32,7 @@ export default function StudentsPage() {
         subtitle="Every scholarship passed out: who it went to, WhatsApp #, student ID, date passed out, sport, school, length, quantified value and signed agency agreement."
         actions={
           ['SUPER_ADMIN', 'ADMIN'].includes(user?.role ?? '') && (
-            <Button icon={<Plus className="size-4" />} onClick={() => setAwardOpen(true)}>
+            <Button onClick={() => setAwardOpen(true)}>
               Award scholarship
             </Button>
           )
@@ -41,10 +40,9 @@ export default function StudentsPage() {
       />
       <Card padded={false}>
         <div className="space-y-3 border-b border-slate-100 p-4">
-          <div className="grid gap-3 md:grid-cols-[1fr_220px_160px_140px]">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_220px_160px_140px]">
             <label className="relative">
-              <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
-              <Input className="pl-9" placeholder="Name, student ID, award no, WhatsApp…" value={q} onChange={(e) => (setQ(e.target.value), setPage(1))} />
+              <Input placeholder="Name, student ID, award no, WhatsApp…" value={q} onChange={(e) => (setQ(e.target.value), setPage(1))} />
             </label>
             <Select value={universityId} onChange={(e) => (setUniversityId(e.target.value), setPage(1))}>
               <option value="">School: All</option>
@@ -72,7 +70,7 @@ export default function StudentsPage() {
           <PageLoader />
         ) : data.items.length === 0 ? (
           <div className="p-6">
-            <EmptyState icon={<Trophy className="size-8" />} title="No scholarships found" />
+            <EmptyState title="No scholarships found" />
           </div>
         ) : (
           <>
@@ -95,7 +93,7 @@ export default function StudentsPage() {
                 {data.items.map((a) => (
                   <Fragment key={a.id}>
                     <tr className="cursor-pointer hover:bg-slate-50" onClick={() => setOpen(open === a.id ? null : a.id)}>
-                      <Td className="w-8">{open === a.id ? <ChevronDown className="size-4 text-slate-400" /> : <ChevronRight className="size-4 text-slate-400" />}</Td>
+                      <Td className="w-8"><span aria-hidden className={`inline-block text-lg leading-none text-slate-400 transition-transform ${open === a.id ? 'rotate-90' : ''}`}>›</span></Td>
                       <Td>
                         <div className="flex items-center gap-3">
                           <Avatar name={a.athleteName} size={32} />

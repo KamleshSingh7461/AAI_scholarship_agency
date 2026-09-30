@@ -1,5 +1,4 @@
 'use client';
-import { Upload } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { ACCEPTED_TYPES, uploadFile } from '@aci/web-shared';
 import { Button, useToast } from '@aci/web-shared/ui';
@@ -30,7 +29,6 @@ export function FileButton({
         size={size}
         variant="secondary"
         loading={pct !== null}
-        icon={<Upload className="size-4" />}
         onClick={() => ref.current?.click()}
       >
         {pct !== null ? `${pct}%` : label}

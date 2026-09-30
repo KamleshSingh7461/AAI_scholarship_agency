@@ -2,7 +2,6 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { Building2, Plus, Search } from 'lucide-react';
 import { apiPost } from '@aci/web-shared';
 import { useAuth } from '@aci/web-shared/auth';
 import { useApi } from '@aci/web-shared/hooks';
@@ -36,19 +35,18 @@ export default function UniversitiesPage() {
         title="Partner universities"
         breadcrumb="Home / Universities"
         subtitle="Universities, their MoUs, the scholarship rights they transfer each year, and the programs built on them."
-        actions={isAdmin && <Button icon={<Plus className="size-4" />} onClick={() => setOpen(true)}>Add university</Button>}
+        actions={isAdmin && <Button onClick={() => setOpen(true)}>Add university</Button>}
       />
       <Card padded={false}>
         <div className="border-b border-slate-100 p-4">
           <label className="relative block max-w-md">
-            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
-            <Input className="pl-9" placeholder="Search" value={q} onChange={(e) => setQ(e.target.value)} />
+            <Input placeholder="Search" value={q} onChange={(e) => setQ(e.target.value)} />
           </label>
         </div>
         {!data ? (
           <PageLoader />
         ) : data.items.length === 0 ? (
-          <div className="p-6"><EmptyState icon={<Building2 className="size-8" />} title="No universities yet" /></div>
+          <div className="p-6"><EmptyState title="No universities yet" /></div>
         ) : (
           <Table>
             <thead>
@@ -90,7 +88,7 @@ export default function UniversitiesPage() {
           </>
         }
       >
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label="Name" required className="sm:col-span-2"><Input value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} placeholder="IES University, Bhopal" /></Field>
           <Field label="Short name"><Input value={f.shortName} onChange={(e) => setF({ ...f, shortName: e.target.value })} placeholder="IES" /></Field>
           <Field label="Website"><Input value={f.website} onChange={(e) => setF({ ...f, website: e.target.value })} placeholder="https://" /></Field>

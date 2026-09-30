@@ -1,6 +1,5 @@
 'use client';
 import { useState } from 'react';
-import { Eye, FileSignature, Search } from 'lucide-react';
 import { AGREEMENT_LABEL, apiPost, date, dateTime, openDocument } from '@aci/web-shared';
 import { useApi } from '@aci/web-shared/hooks';
 import { Avatar, Button, Card, EmptyState, Input, PageHeader, PageLoader, Pagination, Stat, StatusBadge, Table, Tabs, Td, Th, useToast } from '@aci/web-shared/ui';
@@ -52,7 +51,7 @@ export default function PaperworkPage() {
         breadcrumb="Home / Signed Paperwork"
         subtitle="Every student must sign two forms online — the Scholarship Award Agreement and the Agency Agreement — before their award is active, and again every year to renew."
       />
-      <div className="mb-6 grid gap-4 sm:grid-cols-4">
+      <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-4">
         <Stat label="Pending" value={(c.SENT ?? 0) + (c.CREATED ?? 0)} tone="amber" />
         <Stat label="Viewed" value={c.VIEWED ?? 0} />
         <Stat label="Signed" value={c.SIGNED ?? 0} tone="green" />
@@ -62,8 +61,7 @@ export default function PaperworkPage() {
         <div className="space-y-3 border-b border-slate-100 p-4">
           <div className="flex flex-wrap gap-3">
             <label className="relative w-full max-w-sm">
-              <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
-              <Input className="pl-9" placeholder="Student name or email" value={q} onChange={(e) => (setQ(e.target.value), setPage(1))} />
+              <Input placeholder="Student name or email" value={q} onChange={(e) => (setQ(e.target.value), setPage(1))} />
             </label>
             <Tabs
               tabs={[
@@ -86,7 +84,7 @@ export default function PaperworkPage() {
         {!data ? (
           <PageLoader />
         ) : data.items.length === 0 ? (
-          <div className="p-6"><EmptyState icon={<FileSignature className="size-8" />} title="No envelopes" /></div>
+          <div className="p-6"><EmptyState title="No envelopes" /></div>
         ) : (
           <>
             <Table>
@@ -121,7 +119,7 @@ export default function PaperworkPage() {
                     </Td>
                     <Td className="text-right">
                       {e.signedDocumentId ? (
-                        <Button size="sm" variant="secondary" icon={<Eye className="size-4" />} onClick={() => openDocument(e.signedDocumentId!)}>
+                        <Button size="sm" variant="secondary" onClick={() => openDocument(e.signedDocumentId!)}>
                           View
                         </Button>
                       ) : ['SENT', 'VIEWED'].includes(e.status) ? (

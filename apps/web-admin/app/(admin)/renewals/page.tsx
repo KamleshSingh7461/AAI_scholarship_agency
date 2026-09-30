@@ -1,7 +1,6 @@
 'use client';
 import Link from 'next/link';
 import { useState } from 'react';
-import { RefreshCw } from 'lucide-react';
 import { apiPost, date, statusLabel } from '@aci/web-shared';
 import { useApi } from '@aci/web-shared/hooks';
 import { Avatar, Button, Card, EmptyState, PageHeader, PageLoader, Pagination, Stat, StatusBadge, Table, Tabs, Td, Th, useToast } from '@aci/web-shared/ui';
@@ -37,13 +36,13 @@ export default function RenewalsPage() {
         breadcrumb="Home / Yearly Renewals"
         subtitle="A scholarship does not renew itself. Every single year, the student must register and sign again online to keep receiving it — no signature, no scholarship that year."
       />
-      <div className="mb-6 grid gap-4 sm:grid-cols-4">
+      <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-4">
         <Stat label="Renewed this year" value={s.RENEWED_THIS_YEAR ?? 0} tone="green" />
         <Stat label="Due for renewal" value={s.DUE ?? 0} tone="amber" />
         <Stat label="Overdue" value={s.OVERDUE ?? 0} tone="red" />
         <Stat label="Suspended" value={s.SUSPENDED ?? 0} tone="red" />
       </div>
-      <div className="mb-6 grid gap-3 sm:grid-cols-4">
+      <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-4">
         {[
           ['1', `${data.policy.reminderDaysBefore} days before`, 'We text and email the student a reminder'],
           ['2', data.policy.envelopeDaysBefore ? `${data.policy.envelopeDaysBefore} days before` : 'On the anniversary', 'A new form to sign is sent automatically'],
@@ -66,7 +65,7 @@ export default function RenewalsPage() {
           />
         </div>
         {data.items.length === 0 ? (
-          <div className="p-6"><EmptyState icon={<RefreshCw className="size-8" />} title="Nothing in this list" /></div>
+          <div className="p-6"><EmptyState title="Nothing in this list" /></div>
         ) : (
           <>
             <Table>

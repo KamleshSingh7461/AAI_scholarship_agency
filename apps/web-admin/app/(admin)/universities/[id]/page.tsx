@@ -2,7 +2,6 @@
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useState } from 'react';
-import { ArrowLeft, Eye, FileText, Lock, Plus } from 'lucide-react';
 import { apiPatch, apiPost, date, money, openDocument, pct, statusLabel } from '@aci/web-shared';
 import { useAuth } from '@aci/web-shared/auth';
 import { useApi } from '@aci/web-shared/hooks';
@@ -145,8 +144,8 @@ export default function UniversityPage() {
 
   return (
     <div className="space-y-6">
-      <Link href="/universities" className="inline-flex items-center gap-1 text-sm font-semibold text-slate-500 hover:text-slate-800">
-        <ArrowLeft className="size-4" /> Universities
+      <Link href="/universities" className="eyebrow link-grow inline-block text-slate-600 hover:text-ink">
+        ← Universities
       </Link>
       <PageHeader title={u.name} subtitle={[u.city, u.state, u.website].filter(Boolean).join(' · ')} actions={<StatusBadge status={u.status} />} />
       <Tabs
@@ -164,7 +163,7 @@ export default function UniversityPage() {
         <Card
           title="Scholarship rights transferred each academic year"
           subtitle="From the Scholarship Transfer Letter: how many seats the university gives us each year, and what happens to unused seats."
-          actions={isAdmin && <Button size="sm" icon={<Plus className="size-4" />} onClick={() => setAlloc({ academicYear: '', totalSeats: 50, rolloverPolicy: 'FORFEIT', valuationCurrency: 'INR' })}>Add year</Button>}
+          actions={isAdmin && <Button size="sm" onClick={() => setAlloc({ academicYear: '', totalSeats: 50, rolloverPolicy: 'FORFEIT', valuationCurrency: 'INR' })}>Add year</Button>}
           padded={false}
         >
           <Table>
@@ -198,7 +197,7 @@ export default function UniversityPage() {
                     {a.valuationLetterDocumentId && <button className="text-xs font-semibold text-brand-700 underline" onClick={() => openDocument(a.valuationLetterDocumentId!)}>Valuation</button>}
                   </Td>
                   <Td><StatusBadge status={a.status} /></Td>
-                  <Td>{isAdmin && a.status === 'OPEN' && <Button size="sm" variant="ghost" icon={<Lock className="size-4" />} onClick={() => setClosing(a)}>Close year</Button>}</Td>
+                  <Td>{isAdmin && a.status === 'OPEN' && <Button size="sm" variant="ghost" onClick={() => setClosing(a)}>Close year</Button>}</Td>
                 </tr>
               ))}
               {allocations?.length === 0 && <tr><Td colSpan={9} className="text-slate-500">No allocations recorded yet.</Td></tr>}
@@ -210,13 +209,13 @@ export default function UniversityPage() {
       {tab === 'agreements' && (
         <Card
           title="Partnership agreements"
-          actions={isAdmin && <Button size="sm" icon={<Plus className="size-4" />} onClick={() => setAgr({ type: 'ESTABLISHMENT', title: '', effectiveDate: '' })}>Add agreement</Button>}
+          actions={isAdmin && <Button size="sm" onClick={() => setAgr({ type: 'ESTABLISHMENT', title: '', effectiveDate: '' })}>Add agreement</Button>}
           padded={false}
         >
           <ul className="divide-y divide-slate-100">
             {u.agreements.map((a) => (
               <li key={a.id} className="flex flex-wrap items-start gap-4 px-5 py-4">
-                <FileText className="mt-0.5 size-5 text-slate-400" />
+                <span className="mt-0.5 h-9 w-1 shrink-0 bg-ink/20" aria-hidden />
                 <div className="min-w-0 flex-1">
                   <p className="font-semibold text-slate-900">{a.title}</p>
                   <p className="text-xs text-slate-500">
@@ -234,7 +233,7 @@ export default function UniversityPage() {
                   {a.notes && <p className="mt-1 text-xs text-slate-500">{a.notes}</p>}
                 </div>
                 <StatusBadge status={a.status} />
-                {a.documentId && <Button size="sm" variant="secondary" icon={<Eye className="size-4" />} onClick={() => openDocument(a.documentId!)}>Document</Button>}
+                {a.documentId && <Button size="sm" variant="secondary" onClick={() => openDocument(a.documentId!)}>Document</Button>}
               </li>
             ))}
             {u.agreements.length === 0 && <li className="px-5 py-4 text-sm text-slate-500">No agreements recorded.</li>}
@@ -243,7 +242,7 @@ export default function UniversityPage() {
       )}
 
       {tab === 'programs' && (
-        <Card title="Programs" actions={isAdmin && <Link href={`/programs/new?universityId=${id}`}><Button size="sm" icon={<Plus className="size-4" />}>New program</Button></Link>} padded={false}>
+        <Card title="Programs" actions={isAdmin && <Link href={`/programs/new?universityId=${id}`}><Button size="sm">New program</Button></Link>} padded={false}>
           <Table>
             <thead>
               <tr>
@@ -272,7 +271,7 @@ export default function UniversityPage() {
       {tab === 'details' && (
         <Card title="Details" actions={isAdmin && !edit && <Button size="sm" variant="secondary" onClick={() => setEdit(u)}>Edit</Button>}>
           {edit ? (
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               {(['name', 'shortName', 'city', 'state', 'website', 'contactName', 'contactEmail', 'contactPhone'] as const).map((k) => (
                 <Field key={k} label={statusLabel(k.replace(/([A-Z])/g, '_$1').toUpperCase())}>
                   <Input value={(edit[k] as string) ?? ''} onChange={(e) => setEdit({ ...edit, [k]: e.target.value })} />
@@ -291,7 +290,7 @@ export default function UniversityPage() {
               </div>
             </div>
           ) : (
-            <dl className="grid gap-4 text-sm sm:grid-cols-2">
+            <dl className="grid grid-cols-1 gap-4 text-sm sm:grid-cols-2">
               <div><dt className="text-xs text-slate-500">Contact</dt><dd>{[u.contactName, u.contactEmail, u.contactPhone].filter(Boolean).join(' · ') || '—'}</dd></div>
               <div><dt className="text-xs text-slate-500">Website</dt><dd>{u.website ?? '—'}</dd></div>
               <div className="sm:col-span-2"><dt className="text-xs text-slate-500">Description</dt><dd>{u.description ?? '—'}</dd></div>
@@ -313,7 +312,7 @@ export default function UniversityPage() {
         }
       >
         {agr && (
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Field label="Type">
               <Select value={agr.type} onChange={(e) => setAgr({ ...agr, type: e.target.value })}>
                 {Object.entries(AGREEMENT_TYPES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
@@ -351,7 +350,7 @@ export default function UniversityPage() {
         }
       >
         {alloc && (
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Field label="Academic year" required hint="e.g. 2026-27"><Input value={alloc.academicYear} onChange={(e) => setAlloc({ ...alloc, academicYear: e.target.value })} /></Field>
             <Field label="Seats transferred" required><Input type="number" value={alloc.totalSeats} onChange={(e) => setAlloc({ ...alloc, totalSeats: e.target.value })} /></Field>
             <Field label="Unused seats at year end" hint="The IES transfer letter says forfeited; the valuation letter says rolled over — confirm with the university">

@@ -144,10 +144,10 @@ export function ProgramForm({ program, universityId, onSubmit, frozen, usdInrRat
 
   const cur = f.currency;
   return (
-    <form onSubmit={submit} className="grid gap-6 xl:grid-cols-[1fr_340px]">
+    <form onSubmit={submit} className="grid grid-cols-1 gap-6 xl:grid-cols-[1fr_340px]">
       <div className="space-y-6">
         <Card title="Basics">
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Field label="University" required>
               <Select value={f.universityId} onChange={set('universityId')} required disabled={!!program}>
                 <option value="">Select</option>
@@ -188,7 +188,7 @@ export function ProgramForm({ program, universityId, onSubmit, frozen, usdInrRat
 
         <Card title="Value per year" subtitle="Quantified benefits that make up the award. Components paid by the student are not counted.">
           {frozen && <Alert tone="warning" className="mb-4">Seats have been reserved or awarded, so value, length and currency are locked (they are in signed agreements). Create a new program to change them.</Alert>}
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <Field label="Currency">
               <Select value={f.currency} onChange={set('currency')} disabled={frozen}>
                 <option value="INR">INR ₹</option>
@@ -217,7 +217,7 @@ export function ProgramForm({ program, universityId, onSubmit, frozen, usdInrRat
         </Card>
 
         <Card title="Eligibility">
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Field label="Eligible sports" hint="Comma separated; empty = all sports"><Input value={f.eligibleSports} onChange={set('eligibleSports')} /></Field>
             <Field label="Courses" hint="Comma separated"><Input value={f.courses} onChange={set('courses')} /></Field>
             <Field label="Min age"><Input type="number" value={f.minAge} onChange={set('minAge')} /></Field>
@@ -234,7 +234,7 @@ export function ProgramForm({ program, universityId, onSubmit, frozen, usdInrRat
         </Card>
 
         <Card title="Application fee" subtitle="Charged once, in INR, when the athlete applies. Flat or a percentage of the scholarship value.">
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <Field label="Fee type">
               <Select value={f.feeType} onChange={set('feeType')}>
                 <option value="NONE">No fee</option>
@@ -264,7 +264,7 @@ export function ProgramForm({ program, universityId, onSubmit, frozen, usdInrRat
         </Card>
 
         <Card title="Agency commission">
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Field label="Commission % of scholarship value"><Input type="number" min={0} step="0.01" value={f.commissionPct} onChange={set('commissionPct')} /></Field>
             <Field label="University's share of the commission %"><Input type="number" min={0} step="0.01" value={f.universityCommissionSharePct} onChange={set('universityCommissionSharePct')} /></Field>
           </div>

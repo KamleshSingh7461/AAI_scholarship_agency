@@ -1,6 +1,5 @@
 'use client';
 import { useState } from 'react';
-import { Search } from 'lucide-react';
 import { apiPost, dateTime, money } from '@aci/web-shared';
 import { useAuth } from '@aci/web-shared/auth';
 import { useApi } from '@aci/web-shared/hooks';
@@ -50,7 +49,7 @@ export default function PaymentsPage() {
     <div>
       <PageHeader title="Payments" breadcrumb="Home / Payments" subtitle="Application fees collected through the payment gateway." />
       {summary && (
-        <div className="mb-6 grid gap-4 sm:grid-cols-4">
+        <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-4">
           <Stat label="Collected" value={money(summary.collectedInr, 'INR')} tone="green" />
           <Stat label="GST portion" value={money(summary.taxInr, 'INR')} />
           <Stat label="Refunded" value={money(summary.refundedInr, 'INR')} />
@@ -60,8 +59,7 @@ export default function PaymentsPage() {
       <Card padded={false}>
         <div className="space-y-3 border-b border-slate-100 p-4">
           <label className="relative block max-w-md">
-            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
-            <Input className="pl-9" placeholder="Receipt no, transaction id, description" value={q} onChange={(e) => (setQ(e.target.value), setPage(1))} />
+            <Input placeholder="Receipt no, transaction id, description" value={q} onChange={(e) => (setQ(e.target.value), setPage(1))} />
           </label>
           <Tabs tabs={['PAID', 'PENDING', 'FAILED', 'REFUNDED', 'EXPIRED', ''].map((s) => ({ value: s, label: s || 'All' }))} value={status} onChange={(v) => (setStatus(v), setPage(1))} />
         </div>

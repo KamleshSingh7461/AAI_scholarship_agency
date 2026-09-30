@@ -1,8 +1,9 @@
 'use client';
 import Link from 'next/link';
-import { useState } from 'react';
-import { ClipboardList, Search } from 'lucide-react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense, useState } from 'react';
 import { date, statusLabel } from '@aci/web-shared';
+import { useAuth } from '@aci/web-shared/auth';
 import { useApi } from '@aci/web-shared/hooks';
 import { Card, EmptyState, Input, PageHeader, PageLoader, Pagination, StatusBadge, Table, Tabs, Td, Th } from '@aci/web-shared/ui';
 import { Money } from '@/components/money';
@@ -11,11 +12,28 @@ import type { Application, Paged } from '@/lib/types';
 const PIPELINE = ['', 'PAYMENT_PENDING', 'SUBMITTED', 'UNDER_REVIEW', 'FORWARDED_TO_UNIVERSITY', 'AGREEMENTS_PENDING', 'AWARDED', 'REJECTED', 'UNIVERSITY_REJECTED', 'WITHDRAWN', 'EXPIRED'];
 
 export default function ApplicationsPage() {
-  const [status, setStatus] = useState('SUBMITTED');
+  return (
+    <Suspense fallback={<PageLoader />}>
+      <ApplicationsInner />
+    </Suspense>
+  );
+}
+
+function ApplicationsInner() {
+  const router = useRouter();
+  const { user } = useAuth();
+  const fromUrl = useSearchParams().get('status');
+  // University reps land on the applications waiting for their decision; everyone else on new submissions.
+  const [status, setStatus] = useState(fromUrl !== null && PIPELINE.includes(fromUrl) ? fromUrl : user?.role === 'UNIVERSITY_REP' ? 'FORWARDED_TO_UNIVERSITY' : 'SUBMITTED');
   const [q, setQ] = useState('');
   const [page, setPage] = useState(1);
   const { data } = useApi<Paged<Application>>('/applications', { status, q, page, pageSize: 25 });
   const counts = data?.statusCounts ?? {};
+  const pick = (v: string) => {
+    setStatus(v);
+    setPage(1);
+    router.replace(`/applications?status=${v}`, { scroll: false });
+  };
 
   return (
     <div>
@@ -23,20 +41,19 @@ export default function ApplicationsPage() {
       <Card padded={false}>
         <div className="space-y-3 border-b border-slate-100 p-4">
           <label className="relative block max-w-md">
-            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
-            <Input className="pl-9" placeholder="Search name, application no, athlete ID, phone" value={q} onChange={(e) => (setQ(e.target.value), setPage(1))} />
+            <Input placeholder="Search name, application no, athlete ID, phone" value={q} onChange={(e) => (setQ(e.target.value), setPage(1))} />
           </label>
           <Tabs
             tabs={PIPELINE.map((s) => ({ value: s, label: s ? statusLabel(s) : 'All', count: s ? counts[s] ?? 0 : Object.values(counts).reduce((a, b) => a + b, 0) }))}
             value={status}
-            onChange={(v) => (setStatus(v), setPage(1))}
+            onChange={pick}
           />
         </div>
         {!data ? (
           <PageLoader />
         ) : data.items.length === 0 ? (
           <div className="p-6">
-            <EmptyState icon={<ClipboardList className="size-8" />} title="No applications in this stage" />
+            <EmptyState title="No applications in this stage" />
           </div>
         ) : (
           <>
@@ -54,9 +71,9 @@ export default function ApplicationsPage() {
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {data.items.map((a) => (
-                  <tr key={a.id} className="hover:bg-slate-50">
+                  <tr key={a.id} className="cursor-pointer hover:bg-slate-50" onClick={() => router.push(`/applications/${a.id}`)}>
                     <Td>
-                      <Link href={`/applications/${a.id}`} className="font-mono text-xs font-semibold text-brand-700 hover:underline">
+                      <Link href={`/applications/${a.id}`} onClick={(e) => e.stopPropagation()} className="font-mono text-xs font-semibold text-brand-700 hover:underline">
                         {a.applicationNo}
                       </Link>
                     </Td>

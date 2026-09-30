@@ -34,13 +34,14 @@ export const useDisplayCurrency = () => useContext(Ctx);
 export function CurrencyToggle({ dark }: { dark?: boolean }) {
   const { display, setDisplay } = useDisplayCurrency();
   return (
-    <div className={clsx('inline-flex rounded-lg p-0.5 text-xs font-bold', dark ? 'bg-white/10' : 'bg-slate-100')}>
+    <div className={clsx('eyebrow inline-flex rounded-[4px] p-0.5 text-[0.62rem]', dark ? 'bg-white/10' : 'bg-slate-100')} role="group" aria-label="Display currency">
       {(['INR', 'USD'] as const).map((c) => (
         <button
           key={c}
           onClick={() => setDisplay(c)}
+          aria-pressed={display === c}
           className={clsx(
-            'rounded-md px-2.5 py-1 transition',
+            'rounded-[3px] px-2.5 py-1 transition',
             display === c ? (dark ? 'bg-white text-ink-900' : 'bg-white text-slate-900 shadow-sm') : dark ? 'text-white/70' : 'text-slate-500',
           )}
         >

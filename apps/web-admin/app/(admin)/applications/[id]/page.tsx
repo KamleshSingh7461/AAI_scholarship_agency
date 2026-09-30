@@ -2,7 +2,6 @@
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useState } from 'react';
-import { ArrowLeft, Building2, Send, ThumbsDown, ThumbsUp, Trophy } from 'lucide-react';
 import { apiPost, dateTime, money, statusLabel } from '@aci/web-shared';
 import { useAuth } from '@aci/web-shared/auth';
 import { useApi } from '@aci/web-shared/hooks';
@@ -13,6 +12,37 @@ import { Money } from '@/components/money';
 import type { Application } from '@/lib/types';
 
 type Dialog = null | { kind: 'reject' | 'forward' | 'review' | 'approve' | 'uni-reject'; note: string; documentId?: string; fileName?: string };
+
+const STAGES = ['Submitted', 'Review', 'University', 'Signatures', 'Awarded'];
+const STAGE_OF: Record<string, number> = {
+  SUBMITTED: 0,
+  UNDER_REVIEW: 1,
+  FORWARDED_TO_UNIVERSITY: 2,
+  UNIVERSITY_APPROVED: 3,
+  AGREEMENTS_PENDING: 3,
+  AWARDED: 4,
+};
+
+/** Plain-language "what happens next" for the current stage and the viewer's role. */
+function nextStepFor(status: string, staff: boolean, canDecide: boolean): string {
+  switch (status) {
+    case 'PAYMENT_PENDING':
+      return 'Waiting for the athlete to pay the application fee.';
+    case 'SUBMITTED':
+      return staff ? 'Start the review to take this application.' : 'Waiting for our team to start the review.';
+    case 'UNDER_REVIEW':
+      return staff ? 'Verify the documents below, then forward to the university — or reject.' : 'Our team is reviewing this application.';
+    case 'FORWARDED_TO_UNIVERSITY':
+      return canDecide ? "Record the university's decision (attach its letter if you have one)." : "Waiting for the university's decision.";
+    case 'UNIVERSITY_APPROVED':
+    case 'AGREEMENTS_PENDING':
+      return 'Waiting for the athlete to sign both agreements.';
+    case 'AWARDED':
+      return 'Complete — the scholarship is active.';
+    default:
+      return `Closed — ${statusLabel(status).toLowerCase()}.`;
+  }
+}
 
 export default function ApplicationReviewPage() {
   const { id } = useParams<{ id: string }>();
@@ -68,39 +98,61 @@ export default function ApplicationReviewPage() {
     'uni-reject': 'Record university REJECTION',
   };
 
+  const actions = (
+    <>
+      {staff && a.status === 'SUBMITTED' && <Button onClick={() => setDialog({ kind: 'review', note: '' })}>Start review</Button>}
+      {staff && a.status === 'UNDER_REVIEW' && <Button onClick={() => setDialog({ kind: 'forward', note: '' })}>Forward to university →</Button>}
+      {canDecide && a.status === 'FORWARDED_TO_UNIVERSITY' && (
+        <>
+          <Button variant="success" onClick={() => setDialog({ kind: 'approve', note: '' })}>
+            University approved
+          </Button>
+          <Button variant="danger" onClick={() => setDialog({ kind: 'uni-reject', note: '' })}>
+            University rejected
+          </Button>
+        </>
+      )}
+      {staff && ['SUBMITTED', 'UNDER_REVIEW'].includes(a.status) && (
+        <Button variant="ghost" onClick={() => setDialog({ kind: 'reject', note: '' })}>
+          Reject
+        </Button>
+      )}
+    </>
+  );
+  const hasActions = (staff && ['SUBMITTED', 'UNDER_REVIEW'].includes(a.status)) || (canDecide && a.status === 'FORWARDED_TO_UNIVERSITY');
+  const stage = STAGE_OF[a.status] ?? -1;
+  const nextStep = nextStepFor(a.status, staff, canDecide);
+
   return (
     <div className="space-y-6">
-      <Link href="/applications" className="inline-flex items-center gap-1 text-sm font-semibold text-slate-500 hover:text-slate-800">
-        <ArrowLeft className="size-4" /> Applications
+      <Link href="/applications" className="eyebrow link-grow inline-block text-slate-600 hover:text-ink">
+        ← Applications
       </Link>
       <PageHeader
+        breadcrumb={<span className="eyebrow">{a.applicationNo}</span>}
         title={`${a.athleteName} → ${a.programName}`}
-        subtitle={`${a.applicationNo} · ${a.universityName} · ${a.sport ?? ''}`}
-        actions={
-          <>
-            <StatusBadge status={a.status} />
-            {staff && a.status === 'SUBMITTED' && <Button size="sm" onClick={() => setDialog({ kind: 'review', note: '' })}>Start review</Button>}
-            {staff && a.status === 'UNDER_REVIEW' && (
-              <Button size="sm" icon={<Send className="size-4" />} onClick={() => setDialog({ kind: 'forward', note: '' })}>
-                Forward to university
-              </Button>
-            )}
-            {staff && ['SUBMITTED', 'UNDER_REVIEW'].includes(a.status) && (
-              <Button size="sm" variant="ghost" onClick={() => setDialog({ kind: 'reject', note: '' })}>Reject</Button>
-            )}
-            {canDecide && a.status === 'FORWARDED_TO_UNIVERSITY' && (
-              <>
-                <Button size="sm" variant="success" icon={<ThumbsUp className="size-4" />} onClick={() => setDialog({ kind: 'approve', note: '' })}>
-                  University approved
-                </Button>
-                <Button size="sm" variant="danger" icon={<ThumbsDown className="size-4" />} onClick={() => setDialog({ kind: 'uni-reject', note: '' })}>
-                  University rejected
-                </Button>
-              </>
-            )}
-          </>
-        }
+        subtitle={`${a.universityName} · ${a.sport ?? ''}`}
+        actions={<StatusBadge status={a.status} />}
       />
+
+      <section aria-label="Application stage">
+        {stage >= 0 && (
+          <ol className="grid grid-cols-5 gap-1.5">
+            {STAGES.map((s, i) => (
+              <li key={s} aria-current={i === stage ? 'step' : undefined}>
+                <div className="split" data-state={i < stage || a.status === 'AWARDED' ? 'done' : i === stage ? 'current' : undefined} />
+                <p className={`eyebrow mt-2 text-[0.62rem] ${i <= stage ? 'text-ink' : 'text-slate-400'}`}>
+                  {String(i + 1).padStart(2, '0')} <span className="hidden sm:inline">{s}</span>
+                </p>
+              </li>
+            ))}
+          </ol>
+        )}
+        <p className="mt-3 text-sm text-slate-700">
+          <span className="eyebrow mr-2 text-[0.62rem] text-brand-600">Next step</span>
+          {nextStep}
+        </p>
+      </section>
 
       {a.status === 'FORWARDED_TO_UNIVERSITY' && (
         <Alert tone="info" title="Waiting for the university's final decision">
@@ -114,7 +166,7 @@ export default function ApplicationReviewPage() {
         </Alert>
       )}
 
-      <div className="grid gap-6 xl:grid-cols-[1fr_380px]">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1fr_380px]">
         <div className="space-y-6">
           <Card title="Application">
             <dl className="grid grid-cols-2 gap-4 text-sm md:grid-cols-4">
@@ -163,6 +215,18 @@ export default function ApplicationReviewPage() {
         </div>
       </div>
 
+      {hasActions && (
+        <div className="sticky bottom-4 z-20">
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-[8px] border-l-4 border-brand-600 bg-chalk px-5 py-3 shadow-[0_0_0_1px_rgb(18_17_16/0.1),0_20px_40px_-20px_rgb(18_17_16/0.5)]">
+            <p className="min-w-0 text-sm">
+              <span className="eyebrow mr-2 text-[0.62rem] text-brand-600">Decision</span>
+              {nextStep}
+            </p>
+            <div className="flex flex-wrap items-center gap-2">{actions}</div>
+          </div>
+        </div>
+      )}
+
       <Modal
         open={!!dialog}
         onClose={() => setDialog(null)}
@@ -200,11 +264,10 @@ export default function ApplicationReviewPage() {
                     subType="APPLICATION_DECISION"
                     onUploaded={(documentId, fileName) => setDialog({ ...dialog, documentId, fileName })}
                   />
-                  <Building2 className="size-4 text-slate-400" />
                 </div>
               </Field>
             )}
-            {dialog.kind === 'approve' && <p className="flex items-center gap-2 text-xs text-slate-500"><Trophy className="size-4" /> Revenue is booked only when the athlete signs both agreements.</p>}
+            {dialog.kind === 'approve' && <p className="text-xs text-slate-500">Revenue is booked only when the athlete signs both agreements.</p>}
           </div>
         )}
       </Modal>

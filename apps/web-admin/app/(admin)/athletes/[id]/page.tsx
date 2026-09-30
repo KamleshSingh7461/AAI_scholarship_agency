@@ -1,7 +1,6 @@
 'use client';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { ArrowLeft } from 'lucide-react';
 import { useAuth } from '@aci/web-shared/auth';
 import { useApi } from '@aci/web-shared/hooks';
 import { Card, PageHeader, StatusBadge, Table, Td, Th } from '@aci/web-shared/ui';
@@ -16,8 +15,8 @@ export default function AthletePage() {
   const { data: apps } = useApi<Paged<Application>>(dossier ? '/applications' : null, { athleteUserId: dossier?.profile.userId, pageSize: 50 });
   return (
     <div className="space-y-6">
-      <Link href="/athletes" className="inline-flex items-center gap-1 text-sm font-semibold text-slate-500 hover:text-slate-800">
-        <ArrowLeft className="size-4" /> Athletes
+      <Link href="/athletes" className="eyebrow link-grow inline-block text-slate-600 hover:text-ink">
+        ← Athletes
       </Link>
       <PageHeader title={dossier ? `${dossier.profile.firstName ?? ''} ${dossier.profile.lastName ?? ''}` : 'Athlete'} subtitle={dossier?.profile.athleteCode} />
       <AthleteDossier profileId={id} canReview={['SUPER_ADMIN', 'ADMIN', 'REVIEWER'].includes(user?.role ?? '')} />

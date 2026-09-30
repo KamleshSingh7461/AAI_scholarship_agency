@@ -1,6 +1,5 @@
 'use client';
 import { useState } from 'react';
-import { Check, Eye, X } from 'lucide-react';
 import { apiPatch, apiPost, date, DOC_LABEL, openDocument, statusLabel } from '@aci/web-shared';
 import { useApi } from '@aci/web-shared/hooks';
 import { Alert, Button, Card, Field, Modal, PageLoader, Select, StatusBadge, Textarea, useToast } from '@aci/web-shared/ui';
@@ -37,10 +36,29 @@ interface Dossier {
 
 function KV({ k, v }: { k: string; v: React.ReactNode }) {
   return (
-    <div>
-      <dt className="text-xs text-slate-500">{k}</dt>
-      <dd className="text-sm font-medium text-slate-900">{v || '—'}</dd>
+    <div className="min-w-0">
+      <dt className="eyebrow text-[0.6rem] text-slate-500">{k}</dt>
+      <dd className="mt-0.5 text-sm font-medium text-slate-900 [overflow-wrap:anywhere]">{v || '—'}</dd>
     </div>
+  );
+}
+
+function Medals({ gold = 0, silver = 0, bronze = 0 }: { gold?: number; silver?: number; bronze?: number }) {
+  const items: [string, number, string][] = [
+    ['Gold', gold, '#c9a227'],
+    ['Silver', silver, '#a7a9ac'],
+    ['Bronze', bronze, '#b07142'],
+  ];
+  return (
+    <span className="inline-flex flex-wrap items-center gap-x-3 gap-y-1">
+      {items.map(([label, n, color]) => (
+        <span key={label} className="inline-flex items-center gap-1.5" title={label}>
+          <span className="size-3 rounded-full shadow-[inset_0_-2px_0_rgb(0_0_0/0.2)]" style={{ background: color }} aria-hidden />
+          <span className="tabular-nums">{n}</span>
+          <span className="sr-only">{label}</span>
+        </span>
+      ))}
+    </span>
   );
 }
 
@@ -97,7 +115,7 @@ export function AthleteDossier({ profileId, canReview }: { profileId: string; ca
         }
       >
         {data.completeness.missing.length > 0 && <Alert tone="warning" className="mb-4">Incomplete: {data.completeness.missing.join(' · ')}</Alert>}
-        <div className="grid gap-6 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           <dl className="grid grid-cols-2 gap-3">
             <KV k="Name" v={`${p.firstName} ${p.lastName}`} />
             <KV k="Date of birth" v={`${date(p.dateOfBirth)}${data.completeness.isMinor ? ' (minor)' : ''}`} />
@@ -117,7 +135,7 @@ export function AthleteDossier({ profileId, canReview }: { profileId: string; ca
             <KV k="Height / weight" v={s.heightCm ? `${s.heightCm} cm / ${s.weightKg} kg` : ''} />
             <KV k="Fitness" v={statusLabel(s.fitnessLevel)} />
             <KV k="Ranking" v={s.rankingLevel ? `${statusLabel(s.rankingLevel)} #${s.rankingValue ?? ''} (${s.ageGroup ?? ''})` : ''} />
-            <KV k="Medal inventory till date" v={`🥇${s.medalsGold ?? 0} 🥈${s.medalsSilver ?? 0} 🥉${s.medalsBronze ?? 0}`} />
+            <KV k="Medal inventory till date" v={<Medals gold={s.medalsGold} silver={s.medalsSilver} bronze={s.medalsBronze} />} />
             <KV k="Best performance" v={s.bestPerformance} />
             <KV k="International" v={s.internationalParticipation ? s.internationalDetails ?? 'Yes' : 'No'} />
             <KV k="Injuries" v={s.previousInjuries ? `${s.injuryDetails} — ${s.recoveryStatus ?? ''}` : 'None declared'} />
@@ -148,7 +166,7 @@ export function AthleteDossier({ profileId, canReview }: { profileId: string; ca
         {p.reviewRemarks && <p className="mt-4 text-xs text-slate-500">Last review remarks: {p.reviewRemarks}</p>}
       </Card>
 
-      <Card title="Documents" subtitle="Open each document and verify it. All mandatory documents must be verified before the profile can be verified." padded={false}>
+      <Card title={`Documents · ${p.documents.filter((d) => d.verificationStatus === 'VERIFIED').length} of ${p.documents.length} verified`} subtitle="Open each document and verify it. All mandatory documents must be verified before the profile can be verified." padded={false}>
         <ul className="divide-y divide-slate-100">
           {p.documents.map((d) => (
             <li key={d.id} className="flex flex-wrap items-center gap-3 px-5 py-3">
@@ -157,15 +175,15 @@ export function AthleteDossier({ profileId, canReview }: { profileId: string; ca
                 {d.remarks && <p className="text-xs text-red-600">{d.remarks}</p>}
               </div>
               <StatusBadge status={d.verificationStatus} />
-              <Button size="sm" variant="secondary" icon={<Eye className="size-4" />} onClick={() => openDocument(d.documentId)}>
+              <Button size="sm" variant="secondary" onClick={() => openDocument(d.documentId)}>
                 Open
               </Button>
               {canReview && (
                 <>
-                  <Button size="sm" variant="success" icon={<Check className="size-4" />} onClick={() => verifyDoc(d.id, 'VERIFIED')} disabled={d.verificationStatus === 'VERIFIED'}>
+                  <Button size="sm" variant="success" onClick={() => verifyDoc(d.id, 'VERIFIED')} disabled={d.verificationStatus === 'VERIFIED'}>
                     Verify
                   </Button>
-                  <Button size="sm" variant="ghost" icon={<X className="size-4" />} onClick={() => setRejectDoc({ id: d.id, remarks: '' })}>
+                  <Button size="sm" variant="ghost" onClick={() => setRejectDoc({ id: d.id, remarks: '' })}>
                     Reject
                   </Button>
                 </>

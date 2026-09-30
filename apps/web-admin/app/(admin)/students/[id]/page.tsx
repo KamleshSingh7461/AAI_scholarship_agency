@@ -2,7 +2,6 @@
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useState } from 'react';
-import { ArrowLeft, Bell, Eye, FileText, RotateCcw } from 'lucide-react';
 import { apiPost, date, dateTime, money, openDocument, statusLabel } from '@aci/web-shared';
 import { useAuth } from '@aci/web-shared/auth';
 import { useApi } from '@aci/web-shared/hooks';
@@ -50,8 +49,8 @@ export default function AwardDetailPage() {
 
   return (
     <div className="space-y-6">
-      <Link href="/students" className="inline-flex items-center gap-1 text-sm font-semibold text-slate-500 hover:text-slate-800">
-        <ArrowLeft className="size-4" /> Students
+      <Link href="/students" className="eyebrow link-grow inline-block text-slate-600 hover:text-ink">
+        ← Students
       </Link>
       <PageHeader
         title={a.athleteName}
@@ -60,12 +59,12 @@ export default function AwardDetailPage() {
           <>
             <StatusBadge status={a.status} />
             {['PENDING_SIGNATURE', 'RENEWAL_DUE', 'SUSPENDED'].includes(a.status) && (
-              <Button size="sm" variant="secondary" icon={<Bell className="size-4" />} loading={busy} onClick={() => run(() => apiPost(`/awards/${id}/remind`), 'Reminder sent on WhatsApp')}>
+              <Button size="sm" variant="secondary" loading={busy} onClick={() => run(() => apiPost(`/awards/${id}/remind`), 'Reminder sent on WhatsApp')}>
                 Remind
               </Button>
             )}
             {isAdmin && a.status === 'PENDING_SIGNATURE' && (
-              <Button size="sm" variant="secondary" icon={<RotateCcw className="size-4" />} loading={busy} onClick={() => run(() => apiPost(`/awards/${id}/resend-agreements`), 'Agreements re-sent')}>
+              <Button size="sm" variant="secondary" loading={busy} onClick={() => run(() => apiPost(`/awards/${id}/resend-agreements`), 'Agreements re-sent')}>
                 Resend agreements
               </Button>
             )}
@@ -78,14 +77,14 @@ export default function AwardDetailPage() {
       {a.suspensionReason && a.status === 'SUSPENDED' && <Alert tone="error" title="Suspended">{a.suspensionReason}</Alert>}
       {a.revokeReason && <Alert tone="error" title={statusLabel(a.status)}>{a.revokeReason}</Alert>}
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Stat label="Total value" value={<Money minor={a.totalValue} currency={a.currency} rate4={a.usdInrRate4} />} sub={`${money(a.annualValue, a.currency)} × ${a.durationYears} years`} tone="green" />
         <Stat label="Date passed out (grant)" value={a.grantDate ? date(a.grantDate) : '—'} sub={a.grantDate ? `Revenue booked ${date(a.grantDate)}` : `Sign by ${date(a.agreementsDeadline)}`} />
         <Stat label="Current year" value={`${a.currentYear} of ${a.durationYears}`} sub={a.startDate ? `${date(a.startDate)} → ${date(a.endDate)}` : ''} />
         <Stat label="University confirmation" value={statusLabel(a.universityConfirmationStatus)} sub={a.universityConfirmedAt ? date(a.universityConfirmedAt) : 'Needed for audit'} tone={a.universityConfirmationStatus === 'CONFIRMED' ? 'green' : 'amber'} />
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-2">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
         <Card title="Value per year">
           <dl className="grid grid-cols-2 gap-4 text-sm sm:grid-cols-4">
             {(
@@ -115,13 +114,13 @@ export default function AwardDetailPage() {
               ] as const
             ).map(([label, at, doc]) => (
               <li key={label} className="flex items-center gap-3 rounded-xl bg-slate-50 p-3">
-                <FileText className={at ? 'size-5 text-emerald-600' : 'size-5 text-amber-500'} />
+                <span className={`h-9 w-1 shrink-0 ${at ? 'bg-accent-600' : 'bg-amber-500'}`} aria-hidden />
                 <div className="flex-1">
                   <p className="font-semibold text-slate-900">{label}</p>
                   <p className="text-xs text-slate-500">{at ? `Signed ${dateTime(at)}` : 'Not signed yet'}</p>
                 </div>
                 {doc && (
-                  <Button size="sm" variant="secondary" icon={<Eye className="size-4" />} onClick={() => openDocument(doc)}>
+                  <Button size="sm" variant="secondary" onClick={() => openDocument(doc)}>
                     View
                   </Button>
                 )}
@@ -170,7 +169,7 @@ export default function AwardDetailPage() {
 
       {a.grantDate && ['SUPER_ADMIN', 'ADMIN', 'FINANCE', 'UNIVERSITY_REP'].includes(user?.role ?? '') && (
         <Card title="University confirmation (audit)" subtitle="Every booked amount must be backed by the university's own written confirmation.">
-          <div className="grid gap-4 md:grid-cols-[180px_1fr_auto] md:items-end">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-[180px_1fr_auto] md:items-end">
             <Field label="Status">
               <Select value={conf.status} onChange={(e) => setConf({ ...conf, status: e.target.value })}>
                 <option value="CONFIRMED">Confirmed</option>
@@ -197,7 +196,7 @@ export default function AwardDetailPage() {
       )}
 
       {isFinance && ledger && (
-        <div className="grid gap-6 xl:grid-cols-2">
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
           <Card title="Expense schedule" padded={false}>
             <Table>
               <thead>

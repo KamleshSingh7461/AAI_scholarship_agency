@@ -1,6 +1,5 @@
 'use client';
 import { useState } from 'react';
-import { Download, FileBarChart } from 'lucide-react';
 import { api, apiPost, dateTime } from '@aci/web-shared';
 import { useApi } from '@aci/web-shared/hooks';
 import { Button, Card, Field, Input, PageHeader, PageLoader, Select, StatusBadge, Table, Td, Th, useToast } from '@aci/web-shared/ui';
@@ -62,7 +61,7 @@ export default function ReportsPage() {
     <div className="space-y-6">
       <PageHeader title="Reports you can download" breadcrumb="Home / Reports" subtitle="Pick your filters, then press Generate on any report to create a file you can save or print." />
       <Card>
-        <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-6">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 lg:grid-cols-6">
           <Field label="From"><Input type="date" value={filters.dateFrom} onChange={(e) => setFilters({ ...filters, dateFrom: e.target.value })} /></Field>
           <Field label="To"><Input type="date" value={filters.dateTo} onChange={(e) => setFilters({ ...filters, dateTo: e.target.value })} /></Field>
           <Field label="School">
@@ -88,11 +87,11 @@ export default function ReportsPage() {
           </Field>
         </div>
       </Card>
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
         {catalog.map((r) => (
           <Card key={r.type}>
-            <FileBarChart className="size-6 text-brand-600" />
-            <h3 className="mt-3 font-bold text-slate-900">{r.title}</h3>
+            <p className="eyebrow text-[0.62rem] text-brand-600">{r.formats.map((f) => f.toUpperCase()).join(' · ')}</p>
+            <h3 className="mt-2 text-lg font-bold text-slate-900">{r.title}</h3>
             <p className="mt-1 text-sm text-slate-500">{DESCRIPTIONS[r.type]}</p>
             <div className="mt-4 flex items-center gap-2">
               <Select className="w-24" value={formats[r.type] ?? r.formats[0]} onChange={(e) => setFormats({ ...formats, [r.type]: e.target.value })}>
@@ -125,7 +124,7 @@ export default function ReportsPage() {
                 <Td><StatusBadge status={r.status} /></Td>
                 <Td>
                   {r.status === 'READY' && (
-                    <Button size="sm" variant="secondary" icon={<Download className="size-4" />} onClick={() => download(r.id)}>
+                    <Button size="sm" variant="secondary" onClick={() => download(r.id)}>
                       Download
                     </Button>
                   )}

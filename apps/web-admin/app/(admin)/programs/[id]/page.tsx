@@ -1,7 +1,6 @@
 'use client';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { ArrowLeft, Eye } from 'lucide-react';
 import { apiPatch, apiPost } from '@aci/web-shared';
 import { useAuth } from '@aci/web-shared/auth';
 import { useApi } from '@aci/web-shared/hooks';
@@ -32,8 +31,8 @@ export default function ProgramPage() {
 
   return (
     <div className="space-y-6">
-      <Link href="/programs" className="inline-flex items-center gap-1 text-sm font-semibold text-slate-500 hover:text-slate-800">
-        <ArrowLeft className="size-4" /> Programs
+      <Link href="/programs" className="eyebrow link-grow inline-block text-slate-600 hover:text-ink">
+        ← Programs
       </Link>
       <PageHeader
         title={p.name}
@@ -43,7 +42,7 @@ export default function ProgramPage() {
             <StatusBadge status={p.status} />
             {p.status === 'PUBLISHED' && (
               <a href={`${PUBLIC_SITE}/scholarships/${p.slug}`} target="_blank" rel="noreferrer">
-                <Button size="sm" variant="secondary" icon={<Eye className="size-4" />}>Public page</Button>
+                <Button size="sm" variant="secondary">Public page</Button>
               </a>
             )}
             {isAdmin && p.status !== 'PUBLISHED' && p.status !== 'ARCHIVED' && <Button size="sm" variant="success" onClick={() => setStatus('publish')}>Publish</Button>}
@@ -52,7 +51,7 @@ export default function ProgramPage() {
           </>
         }
       />
-      <div className="grid gap-4 sm:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
         <Stat label="Seats" value={p.seatsTotal} />
         <Stat label="Awarded" value={p.seatsAwarded} tone="green" />
         <Stat label="Reserved (awaiting signature)" value={p.seatsReserved} tone="amber" />

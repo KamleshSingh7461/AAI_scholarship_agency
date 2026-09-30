@@ -1,7 +1,6 @@
 'use client';
 import Link from 'next/link';
 import { useState } from 'react';
-import { GraduationCap, Plus, Search } from 'lucide-react';
 import { money } from '@aci/web-shared';
 import { useAuth } from '@aci/web-shared/auth';
 import { useApi } from '@aci/web-shared/hooks';
@@ -21,20 +20,19 @@ export default function ProgramsPage() {
         title="Scholarship programs"
         breadcrumb="Home / Programs"
         subtitle="What each scholarship is worth, who funds each part, how many seats, and the application fee."
-        actions={['SUPER_ADMIN', 'ADMIN'].includes(user?.role ?? '') && <Link href="/programs/new"><Button icon={<Plus className="size-4" />}>New program</Button></Link>}
+        actions={['SUPER_ADMIN', 'ADMIN'].includes(user?.role ?? '') && <Link href="/programs/new"><Button>New program</Button></Link>}
       />
       <Card padded={false}>
         <div className="flex flex-wrap items-center gap-3 border-b border-slate-100 p-4">
           <label className="relative w-full max-w-sm">
-            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
-            <Input className="pl-9" placeholder="Search name or code" value={q} onChange={(e) => (setQ(e.target.value), setPage(1))} />
+            <Input placeholder="Search name or code" value={q} onChange={(e) => (setQ(e.target.value), setPage(1))} />
           </label>
           <Tabs tabs={['', 'DRAFT', 'PUBLISHED', 'CLOSED', 'ARCHIVED'].map((s) => ({ value: s, label: s ? s.charAt(0) + s.slice(1).toLowerCase() : 'All' }))} value={status} onChange={(v) => (setStatus(v), setPage(1))} />
         </div>
         {!data ? (
           <PageLoader />
         ) : data.items.length === 0 ? (
-          <div className="p-6"><EmptyState icon={<GraduationCap className="size-8" />} title="No programs" /></div>
+          <div className="p-6"><EmptyState title="No programs" /></div>
         ) : (
           <>
             <Table>
